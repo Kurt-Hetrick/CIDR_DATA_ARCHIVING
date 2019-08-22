@@ -1,19 +1,30 @@
 #! /bin/bash
 
-module load sge
+# INPUT ARGUMENTS
 
-DIR_TO_PARSE=$1 #Directory of the Project to compress
-REF_GENOME=$2
+	DIR_TO_PARSE=$1 #Directory of the Project to compress
+	REF_GENOME=$2
 
-SCRIPT_REPO=/isilon/sequencing/Kurt/GIT_REPO/BAM_TO_CRAM/COMPRESSION_SCRIPTS
-DEFAULT_REF_GENOME=/isilon/sequencing/GATK_resource_bundle/1.5/b37/human_g1k_v37_decoy.fasta
+# OTHER VARIABLES
 
-QUEUE_LIST=`qstat -f -s r | egrep -v "^[0-9]|^-|^queue" | cut -d @ -f 1 | sort | uniq | egrep -v "bigmem.q|all.q|cgc.q|programmers.q|lemon.q" | datamash collapse 1 | awk '{print "-q",$1}'`
+	SCRIPT_REPO=/isilon/sequencing/Kurt/GIT_REPO/BAM_TO_CRAM/COMPRESSION_SCRIPTS
+	DEFAULT_REF_GENOME=/isilon/sequencing/GATK_resource_bundle/1.5/b37/human_g1k_v37_decoy.fasta
 
-if [[ ! $REF_GENOME ]]
-	then
-	REF_GENOME=$DEFAULT_REF_GENOME
-fi
+		if [[ ! $REF_GENOME ]]
+		then
+			REF_GENOME=$DEFAULT_REF_GENOME
+		fi
+
+		QUEUE_LIST=`qstat -f -s r \
+			| egrep -v "^[0-9]|^-|^queue|^ " \
+			| cut -d @ -f 1 \
+			| sort \
+			| uniq \
+			| egrep -v "all.q|cgc.q|programmers.q|rhel7.q|bigmem.q|bina.q|qtest.q|bigdata.q|uhoh.q" \
+			| datamash collapse 1 \
+			| awk '{print $1}'`
+
+		PRIORITY="-1023"
 
 # ####Uses bgzip to compress vcf file and tabix to index.  Also, creates md5 values for both####
 #  COMPRESS_AND_INDEX_VCF(){
@@ -27,92 +38,134 @@ fi
 # 	$DIR_TO_PARSE
 # }
 
-####Uses samtools-1.4 to convert bam to cram and index and remove excess tags####  
-BAM_TO_CRAM_CONVERSION_RND(){
-	#Remove Tags + 5-bin Quality Score (RND Projects)
-	 echo qsub $QUEUE_LIST \
-	 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
-	 -j y \
-	 -o $DIR_TO_PARSE/LOGS/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
-	 $SCRIPT_REPO/bam_to_cram_remove_tags_rnd.sh \
-	 $FILE \
-	 $DIR_TO_PARSE \
-	 $REF_GENOME \
-	 $COUNTER
-}
+# Uses samtools-1.4+ to convert bam to cram and index and remove excess tags
 
-####Uses samtools-1.4 (or higher) to convert bam to cram and index and remove excess tags####  
-BAM_TO_CRAM_CONVERSION_PRODUCTION(){
-	#Remove Tags
-	 echo qsub $QUEUE_LIST \
-	 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
-	 -j y \
-	 -o $DIR_TO_PARSE/LOGS/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
-	 $SCRIPT_REPO/bam_to_cram_remove_tags.sh \
-	 $FILE \
-	 $DIR_TO_PARSE \
-	 $REF_GENOME 
-}
+	BAM_TO_CRAM_CONVERSION_RND ()
+		{
+			#Remove Tags + 5-bin Quality Score (RND Projects)
+			 echo \
+			 qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+			 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
+				 -o $DIR_TO_PARSE/LOGS/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
+				 -j y \
+			 $SCRIPT_REPO/bam_to_cram_remove_tags_rnd.sh \
+				 $FILE \
+				 $DIR_TO_PARSE \
+				 $REF_GENOME \
+				 $COUNTER
+		}
 
-####Uses ValidateSam to report any errors found within the original BAM file####
-BAM_VALIDATOR(){
-	echo qsub $QUEUE_LIST \
-	-N BAM_VALIDATOR_$UNIQUE_ID \
-	-j y \
-	-o $DIR_TO_PARSE/LOGS/BAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
-	$SCRIPT_REPO/bam_validation.sh \
-	$FILE \
-	$DIR_TO_PARSE \
-	$COUNTER
-}
+# Uses samtools-1.4 (or higher) to convert bam to cram and index and remove excess tags
 
-####Uses ValidateSam to report any errors found within the cram files####
-CRAM_VALIDATOR(){
-	echo qsub $QUEUE_LIST \
-	-N CRAM_VALIDATOR_$UNIQUE_ID \
-	-hold_jid BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
-	-j y \
-	-o $DIR_TO_PARSE/LOGS/CRAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
-	$SCRIPT_REPO/cram_validation.sh \
-	$FILE \
-	$DIR_TO_PARSE \
-	$REF_GENOME \
-	$COUNTER
-}
+	BAM_TO_CRAM_CONVERSION_PRODUCTION ()
+		{
+			#Remove Tags
+			 echo \
+			 qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+			 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
+				 -o $DIR_TO_PARSE/LOGS/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
+				 -j y \
+			 $SCRIPT_REPO/bam_to_cram_remove_tags.sh \
+				 $FILE \
+				 $DIR_TO_PARSE \
+				 $REF_GENOME 
+		}
 
-####Parses through all CRAM_VALIDATOR files to determine if any errors/potentially corrupted cram files were created and creates a list in the top directory
-VALIDATOR_COMPARER(){
-	echo qsub $QUEUE_LIST \
-	-N VALIDATOR_COMPARE_$UNIQUE_ID \
-	-hold_jid "BAM_VALIDATOR_"$UNIQUE_ID",CRAM_VALIDATOR_"$UNIQUE_ID \
-	-j y \
-	-o $DIR_TO_PARSE/LOGS/BAM_CRAM_VALIDATE_COMPARE_$COUNTER.log \
-	$SCRIPT_REPO/bam_cram_validate_compare.sh \
-	$FILE \
-	$DIR_TO_PARSE \
-	$COUNTER
-}
+# Uses ValidateSam to report any errors found within the original BAM file
+
+	BAM_VALIDATOR ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+			-N BAM_VALIDATOR_$UNIQUE_ID \
+				-o $DIR_TO_PARSE/LOGS/BAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
+				-j y \
+			$SCRIPT_REPO/bam_validation.sh \
+				$FILE \
+				$DIR_TO_PARSE \
+				$COUNTER
+		}
+
+# Uses ValidateSam to report any errors found within the cram files
+
+	CRAM_VALIDATOR ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+			-N CRAM_VALIDATOR_$UNIQUE_ID \
+				-j y \
+				-o $DIR_TO_PARSE/LOGS/CRAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
+			-hold_jid BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
+			$SCRIPT_REPO/cram_validation.sh \
+				$FILE \
+				$DIR_TO_PARSE \
+				$REF_GENOME \
+				$COUNTER
+		}
+
+# Parses through all CRAM_VALIDATOR files to determine if any errors/potentially corrupted cram files were created and creates a list in the top directory
+
+	VALIDATOR_COMPARER ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+			-N VALIDATOR_COMPARE_$UNIQUE_ID \
+				-j y \
+				-o $DIR_TO_PARSE/LOGS/BAM_CRAM_VALIDATE_COMPARE_$COUNTER.log \
+			-hold_jid "BAM_VALIDATOR_"$UNIQUE_ID",CRAM_VALIDATOR_"$UNIQUE_ID \
+			$SCRIPT_REPO/bam_cram_validate_compare.sh \
+				$FILE \
+				$DIR_TO_PARSE \
+				$COUNTER
+		}
 
 # ####Zips and md5s text and csv files####
 # ZIP_TEXT_AND_CSV_FILE(){
 # 	echo qsub $QUEUE_LIST -N COMPRESS_\'$UNIQUE_ID\' -j y -o $DIR_TO_PARSE/LOGS/ZIP_FILE_\'$BASENAME\'.log $SCRIPT_REPO/zip_file.sh \'$FILE\' $DIR_TO_PARSE
 # }
 
+	BUILD_MD5_CHECK_HOLD_LIST ()
+	{
+		MD5_HOLD_LIST=$MD5_HOLD_LIST'VALIDATOR_COMPARE_'$UNIQUE_ID','
+	}
 
-BUILD_MD5_CHECK_HOLD_LIST(){
-	MD5_HOLD_LIST=$MD5_HOLD_LIST'VALIDATOR_COMPARE_'$UNIQUE_ID','
-}
+# Compares MD5 between the original file and the zipped file (using zcat) to validate that the file was compressed successfully
 
-####Compares MD5 between the original file and the zipped file (using zcat) to validate that the file was compressed successfully####
-MD5_CHECK(){
-	echo qsub $QUEUE_LIST \
-	-N MD5_CHECK_ENTIRE_PROJECT_$PROJECT_NAME \
-	-hold_jid $MD5_HOLD_LIST \
-	-j y \
-	-o $DIR_TO_PARSE/LOGS/MD5_CHECK.log \
-	$SCRIPT_REPO/md5_check.sh \
-	$DIR_TO_PARSE
-}
+	MD5_CHECK ()
+		{
+			echo qsub $QUEUE_LIST \
+			-N MD5_CHECK_ENTIRE_PROJECT_$PROJECT_NAME \
+			-hold_jid $MD5_HOLD_LIST \
+			-j y \
+			-o $DIR_TO_PARSE/LOGS/MD5_CHECK.log \
+			$SCRIPT_REPO/md5_check.sh \
+			$DIR_TO_PARSE
+		}
 
 MD5_CHECK_NO_HOLD_ID(){
 	echo qsub $QUEUE_LIST \
