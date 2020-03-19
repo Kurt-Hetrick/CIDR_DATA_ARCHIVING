@@ -302,6 +302,75 @@ for FILE in $(find $DIR_TO_PARSE -type f | egrep 'bam$' | egrep -v 'HC.bam$|[[:s
 		elif [[ $FILE == *".intervals" ]]; then
 			ZIP_TEXT_AND_CSV_FILE
 
+		elif [[ $FILE == *".fasta" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".idat" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".ped" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".fastq" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		# plink makes binary ped files also called bed
+		# these still compress quite a bit
+		# did a before/gzip md5sum check and they match
+		elif [[ $FILE == *".bed" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".lgen" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".CSV" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".sam" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".xml" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".log" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".sample_interval_summary" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".genome" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".tped" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".jpg" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".kin0" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".analysis" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".gtc" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".sas7bdat" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".locs" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".gdepth" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".lgenf" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
+		elif [[ $FILE == *".mpileup" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
 		else
 			echo $FILE not being compressed
 
