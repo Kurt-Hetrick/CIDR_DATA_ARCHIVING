@@ -4,9 +4,6 @@
 # tell sge to execute in bash
 #$ -S /bin/bash
 
-# tell sge to submit any of these queue when available
-#$ -q rnd.q,prod.q,test.q
-
 # tell sge that you are in the users current working directory
 #$ -cwd
 
@@ -20,16 +17,21 @@
 #$ -j y
 
 # export all variables, useful to find out what compute node the program was executed on
-# redirecting stderr/stdout to file as a log.
 
-IN_BAM=$1
-BAM_DIR=$(dirname $IN_BAM)
-CRAM_DIR=$(echo $BAM_DIR | sed -r 's/BAM.*//g')/CRAM
-TEMP_DIR=$(echo $BAM_DIR | sed -r 's/BAM.*//g')/TEMP
-REF_GENOME=/isilon/sequencing/GATK_resource_bundle/bwa_mem_0.7.5a_ref/human_g1k_v37_decoy.fasta # Reference genome used for creating BAM file. Needs to be indexed with samtools faidx (would have ref.fasta.fai companion file)
-PICARD_DIR="/isilon/sequencing/VITO/Programs/picard/picard-tools-1.141/"
-SM_TAG=$(basename $IN_BAM .bam) 
-JAVA_1_7=/isilon/sequencing/Kurt/Programs/Java/jdk1.7.0_25/bin
+	set
+
+	echo
+
+# INPUT VARIABLES
+
+	IN_BAM=$1
+		BAM_DIR=$(dirname $IN_BAM)
+			CRAM_DIR=$(echo $BAM_DIR | sed -r 's/BAM.*//g')/CRAM
+			TEMP_DIR=$(echo $BAM_DIR | sed -r 's/BAM.*//g')/TEMP
+	REF_GENOME=/isilon/sequencing/GATK_resource_bundle/bwa_mem_0.7.5a_ref/human_g1k_v37_decoy.fasta # Reference genome used for creating BAM file. Needs to be indexed with samtools faidx (would have ref.fasta.fai companion file)
+	PICARD_DIR="/isilon/sequencing/VITO/Programs/picard/picard-tools-1.141/"
+	SM_TAG=$(basename $IN_BAM .bam)
+	JAVA_1_7=/isilon/sequencing/Kurt/Programs/Java/jdk1.7.0_25/bin
 
 mkdir -p $TEMP_DIR/CRAM_CONVERSION_VALIDATION/
 

@@ -4,9 +4,6 @@
 # tell sge to execute in bash
 #$ -S /bin/bash
 
-# tell sge to submit any of these queue when available
-#$ -q rnd.q,prod.q,test.q
-
 # tell sge that you are in the users current working directory
 #$ -cwd
 
@@ -20,31 +17,32 @@
 #$ -j y
 
 # export all variables, useful to find out what compute node the program was executed on
-# redirecting stderr/stdout to file as a log.
 
-set
+	set
 
-IN_BAM=$1
-MAIN_DIR=$2
-REF_GENOME=$3
-COUNTER=$4
-SM_TAG=$(basename $IN_BAM .bam)
-CRAM_DIR=$(echo $IN_BAM | sed -r 's/BAM.*/CRAM/g')
+	echo
 
-JAVA_1_7=/isilon/sequencing/Kurt/Programs/Java/jdk1.7.0_25/bin
-PICARD_DIR="/isilon/sequencing/VITO/Programs/picard/picard-tools-1.141/"
+# INPUT VARIABLES
+
+	IN_BAM=$1
+		SM_TAG=$(basename $IN_BAM .bam)
+		CRAM_DIR=$(echo $IN_BAM | sed -r 's/BAM.*/CRAM/g')
+	MAIN_DIR=$2
+	REF_GENOME=$3
+	COUNTER=$4
+	JAVA_1_7=$5
+	PICARD_DIR=$6
 
 mkdir -p $MAIN_DIR/CRAM_CONVERSION_VALIDATION/
 
 START_CRAM_VALIDATION=`date '+%s'`
 
-
-$JAVA_1_7/java -jar $PICARD_DIR/picard.jar \
-ValidateSamFile \
-INPUT= $CRAM_DIR/$SM_TAG".cram" \
-OUTPUT= $MAIN_DIR/CRAM_CONVERSION_VALIDATION/$SM_TAG"_cram."$COUNTER".txt" \
-REFERENCE_SEQUENCE= $REF_GENOME \
-MODE=SUMMARY \
+	$JAVA_1_7/java -jar $PICARD_DIR/picard.jar \
+	ValidateSamFile \
+	INPUT= $CRAM_DIR/$SM_TAG".cram" \
+	OUTPUT= $MAIN_DIR/CRAM_CONVERSION_VALIDATION/$SM_TAG"_cram."$COUNTER".txt" \
+	REFERENCE_SEQUENCE= $REF_GENOME \
+	MODE=SUMMARY
 
 END_CRAM_VALIDATION=`date '+%s'`
 

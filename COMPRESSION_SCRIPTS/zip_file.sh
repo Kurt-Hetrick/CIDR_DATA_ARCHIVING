@@ -4,9 +4,6 @@
 # tell sge to execute in bash
 #$ -S /bin/bash
 
-# tell sge to submit any of these queue when available
-#$ -q rnd.q,prod.q,test.q
-
 # tell sge that you are in the users current working directory
 #$ -cwd
 
@@ -20,18 +17,21 @@
 #$ -j y
 
 # export all variables, useful to find out what compute node the program was executed on
-# redirecting stderr/stdout to file as a log.
 
-set
+	set
 
-IN_FILE=$1
-DIR_TO_PARSE=$2
+	echo
+
+# INPUT VARIABLES
+
+	IN_FILE=$1
+	DIR_TO_PARSE=$2
 
 mkdir -p $DIR_TO_PARSE/TEMP/
 
 START_ZIP=`date '+%s'`
 
-gzip -f -c $IN_FILE >| $IN_FILE.gz 
+	gzip -f -c $IN_FILE >| $IN_FILE.gz
 
 END_ZIP=`date '+%s'`
 
