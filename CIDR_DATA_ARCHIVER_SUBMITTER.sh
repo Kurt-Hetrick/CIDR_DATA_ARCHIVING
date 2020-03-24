@@ -371,6 +371,9 @@ for FILE in $(find $DIR_TO_PARSE -type f | egrep 'bam$' | egrep -v 'HC.bam$|[[:s
 		elif [[ $FILE == *".mpileup" ]]; then
 			ZIP_TEXT_AND_CSV_FILE
 
+		elif [[ $FILE == *".backup" ]]; then
+			ZIP_TEXT_AND_CSV_FILE
+
 		else
 			echo $FILE not being compressed
 
