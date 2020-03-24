@@ -6,14 +6,14 @@ printf \
 	\"summary\": \"Before and after project compression summary\", \n \
 	\"sections\": [\n\
 	{ \n\
-		\"activityTitle\": \"Before Compression Summary for M&#95Valle&#95MendelianDisorders&#95SeqWholeExome_120511_20\",\n\
+		\"activityTitle\": \"Before Compression Summary for project\",\n\
 			\"facts\": [\n\
 "
 
 printf \
 	"{\n \
 	\"name\": \"Project Folder\",\n \
-	\"value\": \"M_Valle_MendelianDisorders_SeqWholeExome_120511_20\"\n \
+	\"value\": \"project\"\n \
 	}, \n \
 	{\n \
 		\"name\": \"Start date\",\n \
@@ -29,12 +29,12 @@ printf \
 
 printf \
 	"{\n \
-	\"activityTitle\": \"Top 15 extensions\",\n\
+	\"activityTitle\": \"Top 15 file extensions by disk space used:\",\n\
 		\"facts\": [\n\
 	"
 
 
-find /mnt/research/completed/04_MENDEL/M_Valle_MendelianDisorders_SeqWholeExome_120511_20/ -type f -exec du -a {} + \
+find /path/to/project/ -type f -exec du -a {} + \
 	| awk 'BEGIN {FS="."} {print $1,$NF}' \
 	| sed -r 's/[[:space:]]+/\t/g' \
 	| sort -k 3,3 \
@@ -52,11 +52,32 @@ printf \
 
 printf \
 	"{\n \
-	\"activityTitle\": \"Top 15 subfolders\",\n\
+	\"activityTitle\": \"Files that have already been gzipped before this compression run by original type (Top 15):\",\n\
 		\"facts\": [\n\
 	"
 
-du -s /mnt/research/completed/04_MENDEL/M_Valle_MendelianDisorders_SeqWholeExome_120511_20/*/ \
+find /path/to/project/ -type f -name "*.gz" -exec du -a {} + \
+	| awk 'BEGIN {FS="[./]";OFS="\t"} {print $1,$(NF-1)"."$NF}' \
+	| sed -r 's/[[:space:]]+/\t/g' \
+	| sort -k 2,2 \
+	| datamash -g 2 sum 1 \
+	| sort -k 2,2nr \
+	|  awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$1"\x22," , "\x22value\x22"":" , "\x22"($2/1024/1024) , "Gb" "\x22" "}"  }' \
+	| head
+
+printf \
+"],\n \
+\"markdown\": true,\n \
+},\n \
+"
+
+printf \
+	"{\n \
+	\"activityTitle\": \"Top 15 subfolders by disk space used:\",\n\
+		\"facts\": [\n\
+	"
+
+du -s /path/to/project/*/ \
 	| sort -k 1,1nr \
 	| awk 'BEGIN {FS="/"} {print $1,$(NF-1)}' \
 	|  awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$2"\x22," , "\x22value\x22"":" , "\x22"($1/1024/1024) , "Gb" "\x22" "}"  }' \
