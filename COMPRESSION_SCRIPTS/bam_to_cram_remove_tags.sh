@@ -36,29 +36,39 @@
 
 START_CRAM=`date '+%s'`
 
-mkdir -p $CRAM_DIR
-
 	if [[ ! -e $DIR_TO_PARSE/cram_compression_times.csv ]]
 		then
-			echo -e SAMPLE,PROCESS,ORIGINAL_BAM_SIZE,CRAM_SIZE,START_TIME,END_TIME >| $DIR_TO_PARSE/cram_compression_times.csv
+				echo -e SAMPLE,PROCESS,ORIGINAL_BAM_SIZE,CRAM_SIZE,HOSTNAME,START_TIME,END_TIME \
+					>| $DIR_TO_PARSE/cram_compression_times.csv
 	fi
 
 
 	# Use samtools to convert a bam file to a cram file with no error
 
-		$SAMTOOLS_EXEC view -C $IN_BAM -x BI -x BD -x BQ -o $CRAM_DIR/$SM_TAG".cram" -T $REF_GENOME -@ 4
+		$SAMTOOLS_EXEC view \
+			-C $DIR_TO_PARSE/TEMP/$SM_TAG"_"$COUNTER"_binned.bam" \
+			-x BI \
+			-x BD \
+			-x BQ \
+			-T $REF_GENOME -@ 4 \
+		-o $CRAM_DIR/$SM_TAG".cram"
+
+	# check the exit signal at this point.
+
+		SCRIPT_STATUS=`echo $?`
 
 	# Use samtools to create an index file for the recently created cram file with the extension .crai
 
-		$SAMTOOLS_EXEC index $CRAM_DIR/$SM_TAG".cram"
-		cp $CRAM_DIR/$SM_TAG".cram.crai" $CRAM_DIR/$SM_TAG".crai"
+		$SAMTOOLS_EXEC index $CRAM_DIR/$SM_TAG".cram" && \
+			cp $CRAM_DIR/$SM_TAG".cram.crai" $CRAM_DIR/$SM_TAG".crai"
 
 	CRAM_FILE_SIZE=$(du -ab $CRAM_DIR/$SM_TAG".cram" | awk '{print ($1/1024/1024/1024)}')
 
 END_CRAM=`date '+%s'`
 
-# md5sum $CRAM_DIR/$SM_TAG".cram" >> $DIR_TO_PARSE/MD5_REPORTS/cram_md5.list
-# md5sum $CRAM_DIR/$SM_TAG".crai" >> $DIR_TO_PARSE/MD5_REPORTS/cram_md5.list
-
-echo $IN_BAM,CRAM,$BAM_FILE_SIZE,$CRAM_FILE_SIZE,$START_CRAM,$END_CRAM \
+echo $IN_BAM,CRAM,$BAM_FILE_SIZE,$CRAM_FILE_SIZE,$HOSTNAME,$START_CRAM,$END_CRAM \
 >> $DIR_TO_PARSE/cram_compression_times.csv
+
+# exit with the signal from the program
+
+	exit $SCRIPT_STATUS
