@@ -26,22 +26,28 @@
 
 	IN_BAM=$1
 		SM_TAG=$(basename $IN_BAM .bam)
-	MAIN_DIR=$2
+	DIR_TO_PARSE=$2
 	COUNTER=$3
 	JAVA_1_7=$4
 	PICARD_DIR=$5
 
-mkdir -p $MAIN_DIR/BAM_CONVERSION_VALIDATION/
-
 START_BAM_VALIDATION=`date '+%s'`
 
 	$JAVA_1_7/java -jar $PICARD_DIR/picard.jar \
-	ValidateSamFile \
-	INPUT= $IN_BAM \
-	OUTPUT= $MAIN_DIR/BAM_CONVERSION_VALIDATION/$SM_TAG"_bam."$COUNTER".txt" \
-	MODE=SUMMARY \
+		ValidateSamFile \
+		INPUT= $IN_BAM \
+		MODE=SUMMARY \
+	OUTPUT= $MAIN_DIR/BAM_CONVERSION_VALIDATION/$SM_TAG"_bam."$COUNTER".txt"
+
+	# check the exit signal at this point.
+
+		SCRIPT_STATUS=`echo $?`
 
 END_BAM_VALIDATION=`date '+%s'`
 
-echo $SM_TAG,VALIDATE_BAM,$START_BAM_VALIDATION,$END_BAM_VALIDATION \
->> $MAIN_DIR/COMPRESSOR.TEST.WALL.CLOCK.TIMES.csv
+echo $IN_BAM,CRAM,$BAM_FILE_SIZE,$CRAM_FILE_SIZE,$HOSTNAME,$START_CRAM,$END_CRAM \
+>> $DIR_TO_PARSE/cram_compression_times.csv
+
+# exit with the signal from the program
+
+	exit $SCRIPT_STATUS
