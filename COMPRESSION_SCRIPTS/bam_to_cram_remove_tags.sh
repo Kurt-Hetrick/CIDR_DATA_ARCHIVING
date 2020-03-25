@@ -38,8 +38,8 @@ START_CRAM=`date '+%s'`
 
 	if [[ ! -e $DIR_TO_PARSE/cram_compression_times.csv ]]
 		then
-				echo -e SAMPLE,PROCESS,ORIGINAL_BAM_SIZE,CRAM_SIZE,HOSTNAME,START_TIME,END_TIME \
-					>| $DIR_TO_PARSE/cram_compression_times.csv
+			echo -e SAMPLE,PROCESS,ORIGINAL_BAM_SIZE,CRAM_SIZE,HOSTNAME,START_TIME,END_TIME \
+				>| $DIR_TO_PARSE/cram_compression_times.csv
 	fi
 
 
@@ -50,7 +50,8 @@ START_CRAM=`date '+%s'`
 			-x BI \
 			-x BD \
 			-x BQ \
-			-T $REF_GENOME -@ 4 \
+			-T $REF_GENOME \
+			--threads 4 \
 		-o $CRAM_DIR/$SM_TAG".cram"
 
 	# check the exit signal at this point.
@@ -59,7 +60,9 @@ START_CRAM=`date '+%s'`
 
 	# Use samtools to create an index file for the recently created cram file with the extension .crai
 
-		$SAMTOOLS_EXEC index $CRAM_DIR/$SM_TAG".cram" && \
+		$SAMTOOLS_EXEC index \
+			-@ 4 \
+		$CRAM_DIR/$SM_TAG".cram" && \
 			cp $CRAM_DIR/$SM_TAG".cram.crai" $CRAM_DIR/$SM_TAG".crai"
 
 	CRAM_FILE_SIZE=$(du -ab $CRAM_DIR/$SM_TAG".cram" | awk '{print ($1/1024/1024/1024)}')

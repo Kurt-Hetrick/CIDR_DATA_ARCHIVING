@@ -37,7 +37,14 @@ START_COMPRESS_VCF=`date '+%s'`
 
 	# compress vcf with bgzip and create tbi index
 
-		$BGZIP_EXEC -c $IN_VCF > $IN_VCF.gz && $TABIX_EXEC -h $IN_VCF.gz
+		$BGZIP_EXEC \
+			-c \
+			--threads 4 \
+			$IN_VCF \
+		> $IN_VCF.gz \
+			&& \
+		$TABIX_EXEC\
+			-h $IN_VCF.gz
 
 	# check the exit signal at this point.
 

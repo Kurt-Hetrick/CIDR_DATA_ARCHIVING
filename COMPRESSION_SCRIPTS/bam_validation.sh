@@ -37,7 +37,7 @@ START_BAM_VALIDATION=`date '+%s'`
 		ValidateSamFile \
 		INPUT= $IN_BAM \
 		MODE=SUMMARY \
-	OUTPUT= $MAIN_DIR/BAM_CONVERSION_VALIDATION/$SM_TAG"_bam."$COUNTER".txt"
+	OUTPUT= $DIR_TO_PARSE/BAM_CONVERSION_VALIDATION/$SM_TAG"_bam."$COUNTER".txt"
 
 	# check the exit signal at this point.
 
@@ -45,7 +45,7 @@ START_BAM_VALIDATION=`date '+%s'`
 
 END_BAM_VALIDATION=`date '+%s'`
 
-echo $IN_BAM,CRAM,$BAM_FILE_SIZE,$CRAM_FILE_SIZE,$HOSTNAME,$START_CRAM,$END_CRAM \
+echo $IN_BAM,CRAM,$BAM_FILE_SIZE,$CRAM_FILE_SIZE,$HOSTNAME,$START_BAM_VALIDATION,$END_BAM_VALIDATION \
 >> $DIR_TO_PARSE/cram_compression_times.csv
 
 # exit with the signal from the program

@@ -46,6 +46,14 @@
 
 START_CRAM=`date '+%s'`
 
+	# create header for wall clocck bench marks
+
+		if [[ ! -e $DIR_TO_PARSE/cram_compression_times.csv ]]
+			then
+				echo -e SAMPLE,PROCESS,ORIGINAL_BAM_SIZE,CRAM_SIZE,HOSTNAME,START_TIME,END_TIME \
+					>| $DIR_TO_PARSE/cram_compression_times.csv
+		fi
+
 	BIN_QUALITY_SCORES_REMOVE_TAGS_AND_CRAM ()
 		{
 			$JAVA_1_7/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
@@ -70,7 +78,8 @@ START_CRAM=`date '+%s'`
 				-x BI \
 				-x BD \
 				-x BQ \
-				-T $REF_GENOME -@ 4 \
+				-T $REF_GENOME \
+				--threads 4 \
 			-o $CRAM_DIR/$SM_TAG".cram"
 
 				# check the exit signal at this point.
@@ -79,7 +88,9 @@ START_CRAM=`date '+%s'`
 
 			# Use samtools to create an index file for the recently created cram file with the extension .crai
 
-				$SAMTOOLS_EXEC index $CRAM_DIR/$SM_TAG".cram" && \
+				$SAMTOOLS_EXEC index \
+					-@ 4 \
+				$CRAM_DIR/$SM_TAG".cram" && \
 					cp $CRAM_DIR/$SM_TAG".cram.crai" $CRAM_DIR/$SM_TAG".crai"
 
 			# add the exit signals from the previous the gatk and samtools programs, not including the index part.
@@ -94,7 +105,8 @@ START_CRAM=`date '+%s'`
 				-x BI \
 				-x BD \
 				-x BQ \
-				-T $REF_GENOME -@ 4 \
+				-T $REF_GENOME \
+				--threads 4 \
 			-o $CRAM_DIR/$SM_TAG".cram"
 
 			# check the exit signal at this point.
@@ -103,19 +115,13 @@ START_CRAM=`date '+%s'`
 
 			# Use samtools-1.6 to create an index file for the recently created cram file with the extension .crai
 
-				$SAMTOOLS_EXEC index $CRAM_DIR/$SM_TAG".cram" && \
+				$SAMTOOLS_EXEC index \
+					-@ 4 \
+				$CRAM_DIR/$SM_TAG".cram" && \
 					cp $CRAM_DIR/$SM_TAG".cram.crai" $CRAM_DIR/$SM_TAG".crai"
 		}
 
 #############################################END OF FUNCTIONS################################################
-
-	# create head for wall clocck bench marks
-
-		if [[ ! -e $DIR_TO_PARSE/cram_compression_times.csv ]]
-			then
-				echo -e SAMPLE,PROCESS,ORIGINAL_BAM_SIZE,CRAM_SIZE,HOSTNAME,START_TIME,END_TIME \
-					>| $DIR_TO_PARSE/cram_compression_times.csv
-		fi
 
 	# look for the bqsr report. if present then do q score binning and remove the indel q score, if not just remove the indel recal q scores
 

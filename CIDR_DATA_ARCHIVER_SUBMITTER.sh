@@ -45,14 +45,16 @@
 
 # Make directories needed for processing if not already present
 
-	mkdir -p $DIR_TO_PARSE/MD5_REPORTS/
-	mkdir -p $DIR_TO_PARSE/LOGS
+	mkdir -p $DIR_TO_PARSE/MD5_REPORTS
+	mkdir -p $DIR_TO_PARSE/LOGS/COMPRESSION
 	mkdir -p $DIR_TO_PARSE/TEMP
+	mkdir -p $DIR_TO_PARSE/BAM_CONVERSION_VALIDATION
+	mkdir -p $MAIN_DIR/CRAM_CONVERSION_VALIDATION
 
 # PIPELINE PROGRAMS
 
-	TABIX_EXEC=/mnt/linuxtools/TABIX/tabix-0.2.6/tabix
-	BGZIP_EXEC=/mnt/linuxtools/TABIX/tabix-0.2.6/bgzip
+	TABIX_EXEC=/mnt/linuxtools/ANACONDA/anaconda2-5.0.0.1/bin/tabix
+	BGZIP_EXEC=/mnt/linuxtools/ANACONDA/anaconda2-5.0.0.1/bin/bgzip
 	GATK_DIR=/mnt/linuxtools/GATK/GenomeAnalysisTK-3.5-0
 	JAVA_1_7=/mnt/linuxtools/JAVA/jdk1.7.0_25/bin
 	SAMTOOLS_EXEC=/mnt/linuxtools/ANACONDA/anaconda2-5.0.0.1/bin/samtools
@@ -72,7 +74,7 @@
 				-p $PRIORITY \
 			-N COMPRESS_$UNIQUE_ID \
 				-j y \
-				-o $DIR_TO_PARSE/LOGS/COMPRESS_AND_INDEX_VCF_$BASENAME.log \
+				-o $DIR_TO_PARSE/LOGS/COMPRESSION/COMPRESS_AND_INDEX_VCF_$BASENAME.log \
 			$SCRIPT_REPO/compress_and_tabix_vcf.sh \
 				$FILE \
 				$DIR_TO_PARSE \
@@ -93,7 +95,7 @@
 				-q $QUEUE_LIST \
 				-p $PRIORITY \
 			 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
-				 -o $DIR_TO_PARSE/LOGS/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
+				 -o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
 				 -j y \
 			 $SCRIPT_REPO/bam_to_cram_remove_tags_rnd.sh \
 				 $FILE \
@@ -118,7 +120,7 @@
 				-q $QUEUE_LIST \
 				-p $PRIORITY \
 			 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
-				 -o $DIR_TO_PARSE/LOGS/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
+				 -o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
 				 -j y \
 			 $SCRIPT_REPO/bam_to_cram_remove_tags.sh \
 				 $FILE \
@@ -139,7 +141,7 @@
 				-q $QUEUE_LIST \
 				-p $PRIORITY \
 			-N BAM_VALIDATOR_$UNIQUE_ID \
-				-o $DIR_TO_PARSE/LOGS/BAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
+				-o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
 				-j y \
 			$SCRIPT_REPO/bam_validation.sh \
 				$FILE \
@@ -162,7 +164,7 @@
 				-p $PRIORITY \
 			-N CRAM_VALIDATOR_$UNIQUE_ID \
 				-j y \
-				-o $DIR_TO_PARSE/LOGS/CRAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
+				-o $DIR_TO_PARSE/LOGS/COMPRESSION/CRAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
 			-hold_jid BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
 			$SCRIPT_REPO/cram_validation.sh \
 				$FILE \
@@ -186,7 +188,7 @@
 				-p $PRIORITY \
 			-N VALIDATOR_COMPARE_$UNIQUE_ID \
 				-j y \
-				-o $DIR_TO_PARSE/LOGS/BAM_CRAM_VALIDATE_COMPARE_$COUNTER.log \
+				-o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_CRAM_VALIDATE_COMPARE_$COUNTER.log \
 			-hold_jid BAM_VALIDATOR"_"$UNIQUE_ID,CRAM_VALIDATOR"_"$UNIQUE_ID \
 			$SCRIPT_REPO/bam_cram_validate_compare.sh \
 				$FILE \
@@ -209,7 +211,7 @@
 				-p $PRIORITY \
 			-N COMPRESS_$UNIQUE_ID \
 				-j y \
-				-o $DIR_TO_PARSE/LOGS/"ZIP_FILE_"$BASENAME".log" \
+				-o $DIR_TO_PARSE/LOGS/COMPRESSION/"ZIP_FILE_"$BASENAME".log" \
 			$SCRIPT_REPO/zip_file.sh \
 				$FILE \
 				$DIR_TO_PARSE
@@ -235,7 +237,7 @@
 				-p $PRIORITY \
 			-N MD5_CHECK_ENTIRE_PROJECT_$PROJECT_NAME \
 				-j y \
-				-o $DIR_TO_PARSE/LOGS/MD5_CHECK.log \
+				-o $DIR_TO_PARSE/LOGS/COMPRESSION/MD5_CHECK.log \
 			-hold_jid $MD5_HOLD_LIST \
 			$SCRIPT_REPO/md5_check.sh \
 				$DIR_TO_PARSE
@@ -252,7 +254,7 @@
 				-p $PRIORITY \
 			-N MD5_CHECK_ENTIRE_PROJECT_$PROJECT_NAME \
 				-j y \
-				-o $DIR_TO_PARSE/LOGS/MD5_CHECK.log \
+				-o $DIR_TO_PARSE/LOGS/COMPRESSION/MD5_CHECK.log \
 			$SCRIPT_REPO/md5_check.sh \
 				$DIR_TO_PARSE
 		}
@@ -277,6 +279,9 @@ for FILE in $(find $DIR_TO_PARSE -type f | egrep 'bam$' | egrep -v 'HC.bam$|[[:s
 			# case $FILE in *02_CIDR_RND*)
 			case $FILE in *[Rr][Nn][Dd]*)
 
+				CRAM_DIR=$(echo $FILE | sed -r 's/BAM.*/CRAM/g')
+					mkdir -p $CRAM_DIR
+
 				BAM_TO_CRAM_CONVERSION_RND
 				BAM_VALIDATOR
 				CRAM_VALIDATOR
@@ -285,6 +290,10 @@ for FILE in $(find $DIR_TO_PARSE -type f | egrep 'bam$' | egrep -v 'HC.bam$|[[:s
 
 			;;
 				*)
+
+				CRAM_DIR=$(echo $FILE | sed -r 's/BAM.*/CRAM/g')
+					mkdir -p $CRAM_DIR
+
 				BAM_TO_CRAM_CONVERSION_PRODUCTION
 				BAM_VALIDATOR
 				CRAM_VALIDATOR
