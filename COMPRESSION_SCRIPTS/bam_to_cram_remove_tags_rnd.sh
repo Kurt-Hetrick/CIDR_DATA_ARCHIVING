@@ -24,7 +24,7 @@
 
 # INPUT VARIABLES
 
-# Reference genome used for creating BAM file. Needs to be indexed with samtools faidx (would have ref.fasta.fai companion file)
+	# Reference genome used for creating BAM file. Needs to be indexed with samtools faidx (would have ref.fasta.fai companion file)
 
 	IN_BAM=$1
 		BAM_FILE_SIZE=$(du -ab $IN_BAM | awk '{print ($1/1024/1024/1024)}')
@@ -44,63 +44,97 @@
 
 	BQSR_FILE=$(find $BAM_MAIN_DIR -depth -name $SM_TAG".bqsr" -or -name  ${SM_TAG}*P*.bqsr | head -n1)
 
-	mkdir -p $CRAM_DIR
-	mkdir -p $DIR_TO_PARSE/TEMP
-
 START_CRAM=`date '+%s'`
 
 	BIN_QUALITY_SCORES_REMOVE_TAGS_AND_CRAM ()
 		{
 			$JAVA_1_7/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
-			-T PrintReads \
-			-R $REF_GENOME \
-			-I $IN_BAM \
-			-BQSR $BQSR_FILE \
-			-dt NONE \
-			-SQQ 10 \
-			-SQQ 20 \
-			-SQQ 30 \
-			-SQQ 40 \
-			-EOQ \
-			-nct 6 \
+				-T PrintReads \
+				-R $REF_GENOME \
+				-I $IN_BAM \
+				-BQSR $BQSR_FILE \
+				-dt NONE \
+				-SQQ 10 \
+				-SQQ 20 \
+				-SQQ 30 \
+				-EOQ \
+				-nct 6 \
 			-o $DIR_TO_PARSE/TEMP/$SM_TAG"_"$COUNTER"_binned.bam"
 
-			$SAMTOOLS_EXEC view -C $DIR_TO_PARSE/TEMP/$SM_TAG"_"$COUNTER"_binned.bam" -x BI -x BD -x BQ -o $CRAM_DIR/$SM_TAG".cram" -T $REF_GENOME -@ 4
+				# check the exit signal at this point.
+
+					SCRIPT_STATUS_1=`echo $?`
+
+			$SAMTOOLS_EXEC view \
+				-C $DIR_TO_PARSE/TEMP/$SM_TAG"_"$COUNTER"_binned.bam" \
+				-x BI \
+				-x BD \
+				-x BQ \
+				-T $REF_GENOME -@ 4 \
+			-o $CRAM_DIR/$SM_TAG".cram"
+
+				# check the exit signal at this point.
+
+					SCRIPT_STATUS_2=`echo $?`
 
 			# Use samtools to create an index file for the recently created cram file with the extension .crai
 
-				$SAMTOOLS_EXEC index $CRAM_DIR/$SM_TAG".cram"
-				cp $CRAM_DIR/$SM_TAG".cram.crai" $CRAM_DIR/$SM_TAG".crai"
+				$SAMTOOLS_EXEC index $CRAM_DIR/$SM_TAG".cram" && \
+					cp $CRAM_DIR/$SM_TAG".cram.crai" $CRAM_DIR/$SM_TAG".crai"
+
+			# add the exit signals from the previous the gatk and samtools programs, not including the index part.
+
+				SCRIPT_STATUS=$((SCRIPT_STATUS_1 + SCRIPT_STATUS_2))
 		}
 
 	REMOVE_TAGS_AND_CRAM_NO_BQSR ()
 		{
-			$SAMTOOLS_EXEC view -C $IN_BAM -x BI -x BD -x BQ -o $CRAM_DIR/$SM_TAG".cram" -T $REF_GENOME -@ 4
+			$SAMTOOLS_EXEC view \
+				-C $IN_BAM \
+				-x BI \
+				-x BD \
+				-x BQ \
+				-T $REF_GENOME -@ 4 \
+			-o $CRAM_DIR/$SM_TAG".cram"
+
+			# check the exit signal at this point.
+
+				SCRIPT_STATUS=`echo $?`
 
 			# Use samtools-1.6 to create an index file for the recently created cram file with the extension .crai
 
-				$SAMTOOLS_EXEC index $CRAM_DIR/$SM_TAG".cram"
-				cp $CRAM_DIR/$SM_TAG".cram.crai" $CRAM_DIR/$SM_TAG".crai"
+				$SAMTOOLS_EXEC index $CRAM_DIR/$SM_TAG".cram" && \
+					cp $CRAM_DIR/$SM_TAG".cram.crai" $CRAM_DIR/$SM_TAG".crai"
 		}
 
 #############################################END OF FUNCTIONS################################################
 
-	if [[ ! -e $DIR_TO_PARSE/cram_compression_times.csv ]]
-		then
-			echo -e SAMPLE,PROCESS,ORIGINAL_BAM_SIZE,CRAM_SIZE,START_TIME,END_TIME >| $DIR_TO_PARSE/cram_compression_times.csv
-	fi
+	# create head for wall clocck bench marks
 
+		if [[ ! -e $DIR_TO_PARSE/cram_compression_times.csv ]]
+			then
+				echo -e SAMPLE,PROCESS,ORIGINAL_BAM_SIZE,CRAM_SIZE,HOSTNAME,START_TIME,END_TIME \
+					>| $DIR_TO_PARSE/cram_compression_times.csv
+		fi
 
-	if [[ -e $BQSR_FILE ]]
-		then
-			BIN_QUALITY_SCORES_REMOVE_TAGS_AND_CRAM
-		else
-			REMOVE_TAGS_AND_CRAM_NO_BQSR
-	fi
+	# look for the bqsr report. if present then do q score binning and remove the indel q score, if not just remove the indel recal q scores
 
-	CRAM_FILE_SIZE=$(du -ab $CRAM_DIR/$SM_TAG".cram" | awk '{print ($1/1024/1024/1024)}')
+		if [[ -e $BQSR_FILE ]]
+			then
+				BIN_QUALITY_SCORES_REMOVE_TAGS_AND_CRAM
+			else
+				REMOVE_TAGS_AND_CRAM_NO_BQSR
+		fi
+
+	# grab the cram file size in Gb
+
+		CRAM_FILE_SIZE=$(du -ab $CRAM_DIR/$SM_TAG".cram" | awk '{print ($1/1024/1024/1024)}')
 
 END_CRAM=`date '+%s'`
 
-echo $IN_BAM,CRAM,$BAM_FILE_SIZE,$CRAM_FILE_SIZE,$START_CRAM,$END_CRAM \
+echo $IN_BAM,CRAM,$BAM_FILE_SIZE,$CRAM_FILE_SIZE,$HOSTNAME,$START_CRAM,$END_CRAM \
 >> $DIR_TO_PARSE/cram_compression_times.csv
+
+# exit with the signal from the program
+
+	exit $SCRIPT_STATUS
