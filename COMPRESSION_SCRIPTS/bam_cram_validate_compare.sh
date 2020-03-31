@@ -37,6 +37,8 @@
 # Made this explicit if the validation output files are not found it will fail
 # this does not account for if the file is empty.
 
+START_FLAGSTAT=`date '+%s'`
+
 	if [[ -e $DIR_TO_PARSE/CRAM_CONVERSION_VALIDATION/$SM_TAG"_cram."$COUNTER".txt" && \
 		-e $DIR_TO_PARSE/BAM_CONVERSION_VALIDATION/$SM_TAG"_bam."$COUNTER".txt" && \
 		-s $DIR_TO_PARSE/CRAM_CONVERSION_VALIDATION/$SM_TAG"_cram."$COUNTER".txt" && \
@@ -79,10 +81,18 @@
 			rm -vf $BAM_DIR/$SM_TAG.bai
 		else
 			echo $SM_TAG CRAM COMPRESSION WAS UNSUCCESSFUL
-			(echo BAM; cat $DIR_TO_PARSE/TEMP/$SM_TAG".bam."$COUNTER".flagstat.out"; echo -e \\nCRAM; cat $DIR_TO_PARSE/TEMP/$SM_TAG".cram."$COUNTER".flagstat.out") \
-				>| $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
+			# (echo BAM; cat $DIR_TO_PARSE/TEMP/$SM_TAG".bam."$COUNTER".flagstat.out"; echo -e \\nCRAM; cat $DIR_TO_PARSE/TEMP/$SM_TAG".cram."$COUNTER".flagstat.out") \
+			# 	>| $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
+
+			awk '{print $1}' $DIR_TO_PARSE/TEMP/$SM_TAG".bam."$COUNTER".flagstat.out" \
+				| paste -d "|" - cat $DIR_TO_PARSE/TEMP/$SM_TAG".cram."$COUNTER".flagstat.out" \
+				| sed 's/+ 0 / ##### /g' \
+				| sed 's/|/ ##### /g' \
+				| awk 'BEGIN {print "BAM ##### CRAM ##### METRIC"} {print $0}' \
+			>| $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
+
 			echo -e $IN_BAM\\tFAIL\\t$CRAM_ONLY_ERRORS | sed -r 's/[[:space:]]+/\t/g' >> $DIR_TO_PARSE/cram_conversion_validation.list
-	# 		mail -s "$IN_BAM Failed Cram conversion-Cram Flagstat Output" vcaropr1@jhmi.edu < $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
+			mail -s "$IN_BAM Failed Cram conversion-Cram Flagstat Output" khetric1@jhmi.edu < $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
 	fi
 
 # Remove own directory once it hits zero, but if it's in the AGGREGATE folder.... Only removes that one and not the complete BAM
@@ -97,8 +107,8 @@
 			rm -rvf $DIR_TO_PARSE/BAM
 	fi
 
- echo $CRAM_DIR/$SM_TAG".cram",BAM_CRAM_VALIDATION_COMPARE,$START_CRAM_VALIDATION,$END_CRAM_VALIDATION \
+END_FLAGSTAT=`date '+%s'`
+
+ echo $CRAM_DIR/$SM_TAG".cram",BAM_CRAM_VALIDATION_COMPARE,$HOSTNAME,$START_FLAGSTAT,$END_FLAGSTAT \
  >> $DIR_TO_PARSE/COMPRESSOR.TEST.WALL.CLOCK.TIMES.csv
 
-##Something to work on/think about.... Output to e-mail being side by side
-#	paste  $DIR_TO_PARSE/TEMP/$SM_TAG".bam.flagstat.out" $DIR_TO_PARSE/TEMP/$SM_TAG".cram.flagstat.out" | awk 'BEGIN {FS="\t" ; print "BAM""\t""CRAM"} { printf "%-100s %s\n", $1, $2 }' >| $DIR_TO_PARSE/TEMP/$SM_TAG".combined.flagstat.out"

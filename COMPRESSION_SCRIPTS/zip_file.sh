@@ -29,11 +29,11 @@
 
 mkdir -p $DIR_TO_PARSE/TEMP/
 
-START_ZIP=`date '+%s'`
+START_GZIP=`date '+%s'`
 
 	gzip -f -c $IN_FILE >| $IN_FILE.gz
 
-END_ZIP=`date '+%s'`
+END_GZIP=`date '+%s'`
 
- echo $IN_FILE,ZIP,$START_ZIP,$END_ZIP \
+ echo $IN_FILE,GZIP,$HOSTNAME,$START_ZIP,$END_ZIP \
  >> $DIR_TO_PARSE/COMPRESSOR.TEST.WALL.CLOCK.TIMES.csv
