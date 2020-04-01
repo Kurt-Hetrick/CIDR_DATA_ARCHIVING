@@ -64,6 +64,7 @@
 	SAMTOOLS_EXEC=/mnt/linuxtools/ANACONDA/anaconda2-5.0.0.1/bin/samtools
 	PICARD_DIR=/mnt/linuxtools/PICARD/picard-tools-1.141
 	DATAMASH_EXE=/mnt/linuxtools/DATAMASH/datamash-1.0.6/datamash
+	PIGZ_MODULE=pigz/2.3.4
 
 ############################################################
 ##### GZIP SELECT OTHER FILES THAT ARE NOT BAM AND VCF #####
@@ -130,7 +131,8 @@
 					-o $DIR_TO_PARSE/LOGS/COMPRESSION/"ZIP_FILE_"$PROJECT_NAME".log" \
 				$SCRIPT_REPO/zip_file.sh \
 					$OTHER_FILES \
-					$DIR_TO_PARSE
+					$DIR_TO_PARSE \
+					$PIGZ_MODULE
 			}
 
 		ZIP_TEXT_AND_CSV_FILE

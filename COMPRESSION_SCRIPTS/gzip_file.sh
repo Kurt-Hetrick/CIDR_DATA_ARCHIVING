@@ -26,6 +26,8 @@
 
 	IN_FILES=$1
 	DIR_TO_PARSE=$2
+	PIGZ_MODULE=$3
+		module load $PIGZ_MODULE
 
 START_GZIP=`date '+%s'`
 
@@ -41,7 +43,7 @@ START_GZIP=`date '+%s'`
 
 				# if any part of pipe fails set exit to non-zero
 
-					gzip -f -c $FILE >| $FILE.gz
+					pigz -c -p 4 $FILE >| $FILE.gz
 
 			# GET THE MD5 AFTER COMPRESSION
 
