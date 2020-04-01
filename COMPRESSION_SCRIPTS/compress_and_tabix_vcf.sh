@@ -32,6 +32,7 @@
 START_COMPRESS_VCF=`date '+%s'`
 
 	# compress vcf with bgzip and create tbi index
+	# compare md5sum before and after compression. if the same, then delete the uncompressed file.
 
 		COMPRESS_AND_VALIDATE ()
 			{
@@ -63,11 +64,15 @@ START_COMPRESS_VCF=`date '+%s'`
 					echo $COMPRESSED_MD5 >> $DIR_TO_PARSE/MD5_REPORTS/compressed_md5_vcf.list
 					echo $ORIGINAL_MD5 >> $DIR_TO_PARSE/MD5_REPORTS/original_md5_vcf.list
 
+				# check md5sum of zipped file using zcat
+
+					ZIPPED_MD5=$(zcat $IN_FILE.gz | md5sum)
+
 				# if md5 matches delete the uncompressed file
 
 					if [[ $ORIGINAL_MD5 = $ZIPPED_MD5 ]]
 						then
-							echo "$IN_VCF" compressed successfully >> $DIR_TO_PARSE/successful_compression_jobs.list
+							echo "$IN_VCF" compressed successfully >> $DIR_TO_PARSE/successful_compression_jobs_vcf.list
 							rm -rvf "$IN_VCF"
 						else
 							echo "$IN_VCF" did not compress successfully >> $DIR_TO_PARSE/failed_compression_jobs_vcf.list
@@ -80,7 +85,7 @@ START_COMPRESS_VCF=`date '+%s'`
 
 	export -f COMPRESS_AND_VALIDATE
 
-	for IN_VCF in (cat $VCF_FILES);
+	for IN_VCF in $(cat $VCF_FILES);
 		do COMPRESS_AND_VALIDATE
 	done
 

@@ -43,6 +43,10 @@
 		COUNTER=0
 		BAM_COUNTER=0
 
+	# create a time stamp
+
+		TIME_STAMP=`date '+%s'`
+
 # Make directories needed for processing if not already present
 
 	mkdir -p $DIR_TO_PARSE/MD5_REPORTS
@@ -61,9 +65,91 @@
 	PICARD_DIR=/mnt/linuxtools/PICARD/picard-tools-1.141
 	DATAMASH_EXE=/mnt/linuxtools/DATAMASH/datamash-1.0.6/datamash
 
+############################################################
+##### GZIP SELECT OTHER FILES THAT ARE NOT BAM AND VCF #####
+############################################################
+
+	# FIND SPECIFIC FILES TO COMPRESS
+		# plink makes binary ped files also called bed
+			# these still compress quite a bit
+			# did a before/gzip md5sum check and they match
+		# just gzipping sam files.
+			# should be for really old projects. don't know how well formed they are and if they would compress to cram
+	# Doing this at the beginning means that i don't have to work about compressing files that are being generated from this pipeline run
+
+	echo
+	echo LOOKING FOR THE FOLLOWING FILES TO COMPRESS:
+	echo txt,csv,intervals,fasta,idat,ped,fastq,bed,lgen,sam,xml,log,sample_interval_summary,genome,tped
+	echo jpg,kin0,analysis,gtc,sas7bdata,locs,gdepth,lgenf,mpileup,backup
+	echo
+
+		find $DIR_TO_PARSE -type f \
+			\( -iname \*.txt \
+			-o -iname \*.csv \
+			-o -name \*.intervals \
+			-o -name \*.fasta \
+			-o -name \*.idat \
+			-o -name \*.ped \
+			-o -name \*.fastq \
+			-o -name \*.bed \
+			-o -name \*.lgen \
+			-o -name \*.sam \
+			-o -name \*.xml \
+			-o -name \*.log \
+			-o -name \*.sample_interval_summary \
+			-o -name \*.genome \
+			-o -name \*.tped \
+			-o -name \*.jpg \
+			-o -name \*.kin0 \
+			-o -name \*.analysis \
+			-o -name \*.gtc \
+			-o -name \*.sas7bdat \
+			-o -name \*.locs \
+			-o -name \*.gdepth \
+			-o -name \*.lgenf \
+			-o -name \*.mpileup \
+			-o -name \*.backup \) \
+		>| $DIR_TO_PARSE/other_files_to_compress"_"$TIME_STAMP".list"
+
+	OTHER_FILES="$DIR_TO_PARSE/other_files_to_compress"_"$TIME_STAMP".list""
+
+	# Zips and md5s text and csv files
+
+		ZIP_TEXT_AND_CSV_FILE ()
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-l h_rt=336:00:00 \
+				-N COMPRESS_$PROJECT_NAME \
+					-j y \
+					-o $DIR_TO_PARSE/LOGS/COMPRESSION/"ZIP_FILE_"$PROJECT_NAME".log" \
+				$SCRIPT_REPO/zip_file.sh \
+					$OTHER_FILES \
+					$DIR_TO_PARSE
+			}
+
+		ZIP_TEXT_AND_CSV_FILE
+
 ##############################
 ##### COMPRESS VCF FILES #####
 ##############################
+
+	# FIND VCF FILES TO COMPRESS
+
+		echo
+		echo NOW LOOKING FOR VCF FILES TO COMPRESS
+		echo
+
+		find $DIR_TO_PARSE -type f \
+			-name "*.vcf" \
+		>| $DIR_TO_PARSE/vcf_to_compress"_"$TIME_STAMP".list"
+
+		VCF_FILES="$DIR_TO_PARSE/vcf_to_compress"_"$TIME_STAMP".list""
 
 	# Uses bgzip to compress vcf file and tabix to index.  Also, creates md5 values for both
 
@@ -76,10 +162,10 @@
 					-V \
 					-q $QUEUE_LIST \
 					-p $PRIORITY \
-					-l h_rt=336:00:00
-				-N COMPRESS_$UNIQUE_ID \
+					-l h_rt=336:00:00 \
+				-N COMPRESS_VCF_$PROJECT_NAME \
 					-j y \
-					-o $DIR_TO_PARSE/LOGS/COMPRESSION/COMPRESS_AND_INDEX_VCF_$BASENAME.log \
+					-o $DIR_TO_PARSE/LOGS/COMPRESSION/COMPRESS_AND_INDEX_VCF_$PROJECT_NAME".log" \
 				$SCRIPT_REPO/compress_and_tabix_vcf.sh \
 					$VCF_FILES \
 					$DIR_TO_PARSE \
@@ -87,318 +173,220 @@
 					$BGZIP_EXEC
 			}
 
-		find $DIR_TO_PARSE -type f -name "*.vcf" \
-			>| $DIR_TO_PARSE/vcf_to_compress.list
-
-		VCF_FILES="$DIR_TO_PARSE/vcf_to_compress.list"
-
 		COMPRESS_AND_INDEX_VCF
 
-# Uses samtools-1.4+ to convert bam to cram and index and remove excess tags
+###############################
+##### CONVERT BAM TO CRAM #####
+###############################
 
-	BAM_TO_CRAM_CONVERSION_RND ()
-		{
-			#Remove Tags + 5-bin Quality Score (RND Projects)
-			 echo \
-			 qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-			 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
-				 -o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
-				 -j y \
-			 $SCRIPT_REPO/bam_to_cram_remove_tags_rnd.sh \
-				 $FILE \
-				 $DIR_TO_PARSE \
-				 $REF_GENOME \
-				 $COUNTER \
-				 $GATK_DIR \
-				 $JAVA_1_7 \
-				 $SAMTOOLS_EXEC
-		}
+	# Uses samtools-1.4+ to convert bam to cram and index and remove excess tags
 
-# Uses samtools-1.4 (or higher) to convert bam to cram and index and remove excess tags
+		BAM_TO_CRAM_CONVERSION_RND ()
+			{
+				#Remove Tags + 5-bin Quality Score (RND Projects)
+				 echo \
+				 qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+				 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
+					 -o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
+					 -j y \
+				 $SCRIPT_REPO/bam_to_cram_remove_tags_rnd.sh \
+					 $FILE \
+					 $DIR_TO_PARSE \
+					 $REF_GENOME \
+					 $COUNTER \
+					 $GATK_DIR \
+					 $JAVA_1_7 \
+					 $SAMTOOLS_EXEC
+			}
 
-	BAM_TO_CRAM_CONVERSION_PRODUCTION ()
-		{
-			#Remove Tags
-			 echo \
-			 qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-			 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
-				 -o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
-				 -j y \
-			 $SCRIPT_REPO/bam_to_cram_remove_tags.sh \
-				 $FILE \
-				 $DIR_TO_PARSE \
-				 $REF_GENOME \
-				 $SAMTOOLS_EXEC
-		}
+	# Uses samtools-1.4 (or higher) to convert bam to cram and index and remove excess tags
 
-# Uses ValidateSam to report any errors found within the original BAM file
+		BAM_TO_CRAM_CONVERSION_PRODUCTION ()
+			{
+				#Remove Tags
+				 echo \
+				 qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+				 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
+					 -o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
+					 -j y \
+				 $SCRIPT_REPO/bam_to_cram_remove_tags.sh \
+					 $FILE \
+					 $DIR_TO_PARSE \
+					 $REF_GENOME \
+					 $SAMTOOLS_EXEC
+			}
 
-	BAM_VALIDATOR ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-			-N BAM_VALIDATOR_$UNIQUE_ID \
-				-o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
-				-j y \
-			$SCRIPT_REPO/bam_validation.sh \
-				$FILE \
-				$DIR_TO_PARSE \
-				$COUNTER \
-				$JAVA_1_7 \
-				$PICARD_DIR
-		}
+	# Uses ValidateSam to report any errors found within the original BAM file
 
-# Uses ValidateSam to report any errors found within the cram files
+		BAM_VALIDATOR ()
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+				-N BAM_VALIDATOR_$UNIQUE_ID \
+					-o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
+					-j y \
+				$SCRIPT_REPO/bam_validation.sh \
+					$FILE \
+					$DIR_TO_PARSE \
+					$COUNTER \
+					$JAVA_1_7 \
+					$PICARD_DIR
+			}
 
-	CRAM_VALIDATOR ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-			-N CRAM_VALIDATOR_$UNIQUE_ID \
-				-j y \
-				-o $DIR_TO_PARSE/LOGS/COMPRESSION/CRAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
-			-hold_jid BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
-			$SCRIPT_REPO/cram_validation.sh \
-				$FILE \
-				$DIR_TO_PARSE \
-				$REF_GENOME \
-				$COUNTER \
-				$JAVA_1_7 \
-				$PICARD_DIR
-		}
+	# Uses ValidateSam to report any errors found within the cram files
 
-# Parses through all CRAM_VALIDATOR files to determine if any errors/potentially corrupted cram files were created and creates a list in the top directory
+		CRAM_VALIDATOR ()
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+				-N CRAM_VALIDATOR_$UNIQUE_ID \
+					-j y \
+					-o $DIR_TO_PARSE/LOGS/COMPRESSION/CRAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
+				-hold_jid BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
+				$SCRIPT_REPO/cram_validation.sh \
+					$FILE \
+					$DIR_TO_PARSE \
+					$REF_GENOME \
+					$COUNTER \
+					$JAVA_1_7 \
+					$PICARD_DIR
+			}
 
-	VALIDATOR_COMPARER ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-			-N VALIDATOR_COMPARE_$UNIQUE_ID \
-				-j y \
-				-o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_CRAM_VALIDATE_COMPARE_$COUNTER.log \
-			-hold_jid BAM_VALIDATOR"_"$UNIQUE_ID,CRAM_VALIDATOR"_"$UNIQUE_ID \
-			$SCRIPT_REPO/bam_cram_validate_compare.sh \
-				$FILE \
-				$DIR_TO_PARSE \
-				$COUNTER \
-				$DATAMASH_EXE \
-				$SAMTOOLS_EXEC
-		}
+	# Parses through all CRAM_VALIDATOR files to determine if any errors/potentially corrupted cram files were created and creates a list in the top directory
 
-# Zips and md5s text and csv files
-
-	ZIP_TEXT_AND_CSV_FILE ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-			-N COMPRESS_$UNIQUE_ID \
-				-j y \
-				-o $DIR_TO_PARSE/LOGS/COMPRESSION/"ZIP_FILE_"$BASENAME".log" \
-			$SCRIPT_REPO/zip_file.sh \
-				$FILE \
-				$DIR_TO_PARSE
-		}
-
-# create a hold id for creating md5 checks
-
-		BUILD_MD5_CHECK_HOLD_LIST ()
-		{
-			MD5_HOLD_LIST=$MD5_HOLD_LIST'VALIDATOR_COMPARE_'$UNIQUE_ID','
-		}
-
-# Compares MD5 between the original file and the zipped file (using zcat) to validate that the file was compressed successfully
-
-	MD5_CHECK ()
-		{
-			echo \
-			qsub\
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-			-N MD5_CHECK_ENTIRE_PROJECT_$PROJECT_NAME \
-				-j y \
-				-o $DIR_TO_PARSE/LOGS/COMPRESSION/MD5_CHECK.log \
-			-hold_jid $MD5_HOLD_LIST \
-			$SCRIPT_REPO/md5_check.sh \
-				$DIR_TO_PARSE
-		}
-
-	MD5_CHECK_NO_HOLD_ID ()
-		{
-			echo \
-			qsub \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-			-N MD5_CHECK_ENTIRE_PROJECT_$PROJECT_NAME \
-				-j y \
-				-o $DIR_TO_PARSE/LOGS/COMPRESSION/MD5_CHECK.log \
-			$SCRIPT_REPO/md5_check.sh \
-				$DIR_TO_PARSE
-		}
-
-# Moved to bam_cram_validate_compare.sh and used an if statement to create only once.  Need to test!	
-# echo -e SAMPLE\\tCRAM_CONVERSION_SUCCESS\\tCRAM_ONLY_ERRORS\\tNUMBER_OF_CRAM_ONLY_ERRORS >| $DIR_TO_PARSE/cram_conversion_validation.list
-
-# Pass variable (vcf/txt/cram) file path to function and call $FILE within function
-
-for FILE in $(find $DIR_TO_PARSE -type f -name "*.bam" | egrep -v 'HC.bam$|[[:space:]]')
-	do
-		BASENAME=$(basename $FILE)
-		UNIQUE_ID=$(echo $BASENAME | sed 's/@/_/g') # If there is an @ in the qsub or holdId name it breaks
-
-		let COUNTER=COUNTER+1 # counter is used for some log or output names if there are multiple copies of a sample file within the directory as to not overwrite outputs
-
-		if [[ $FILE == *".bam" ]]; then
-			let BAM_COUNTER=BAM_COUNTER+1 # number will match the counter number used for logs and output files like bam/cram validation
-			# case $FILE in *02_CIDR_RND*)
-			case $FILE in *[Rr][Nn][Dd]*)
-
-				CRAM_DIR=$(echo $FILE | sed -r 's/BAM.*/CRAM/g')
-					mkdir -p $CRAM_DIR
-
-				BAM_TO_CRAM_CONVERSION_RND
-				BAM_VALIDATOR
-				CRAM_VALIDATOR
-				VALIDATOR_COMPARER
-				BUILD_MD5_CHECK_HOLD_LIST
-
-			;;
-				*)
-
-				CRAM_DIR=$(echo $FILE | sed -r 's/BAM.*/CRAM/g')
-					mkdir -p $CRAM_DIR
-
-				BAM_TO_CRAM_CONVERSION_PRODUCTION
-				BAM_VALIDATOR
-				CRAM_VALIDATOR
-				VALIDATOR_COMPARER
-				BUILD_MD5_CHECK_HOLD_LIST
-			;;
-			esac
-
-		elif [[ $FILE == *".txt" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".csv" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".intervals" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".fasta" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".idat" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".ped" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".fastq" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		# plink makes binary ped files also called bed
-		# these still compress quite a bit
-		# did a before/gzip md5sum check and they match
-		elif [[ $FILE == *".bed" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".lgen" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".CSV" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".sam" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".xml" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".log" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".sample_interval_summary" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".genome" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".tped" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".jpg" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".kin0" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".analysis" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".gtc" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".sas7bdat" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".locs" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".gdepth" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".lgenf" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".mpileup" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		elif [[ $FILE == *".backup" ]]; then
-			ZIP_TEXT_AND_CSV_FILE
-
-		else
-			echo $FILE not being compressed
-
-		fi
-done
+		VALIDATOR_COMPARER ()
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+				-N VALIDATOR_COMPARE_$UNIQUE_ID \
+					-j y \
+					-o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_CRAM_VALIDATE_COMPARE_$COUNTER.log \
+				-hold_jid BAM_VALIDATOR"_"$UNIQUE_ID,CRAM_VALIDATOR"_"$UNIQUE_ID \
+				$SCRIPT_REPO/bam_cram_validate_compare.sh \
+					$FILE \
+					$DIR_TO_PARSE \
+					$COUNTER \
+					$DATAMASH_EXE \
+					$SAMTOOLS_EXEC
+			}
 
 
+
+
+
+
+	# create a hold id for creating md5 checks
+
+			BUILD_MD5_CHECK_HOLD_LIST ()
+			{
+				MD5_HOLD_LIST=$MD5_HOLD_LIST'VALIDATOR_COMPARE_'$UNIQUE_ID','
+			}
+
+	# Compares MD5 between the original file and the zipped file (using zcat) to validate that the file was compressed successfully
+
+		MD5_CHECK ()
+			{
+				echo \
+				qsub\
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+				-N MD5_CHECK_ENTIRE_PROJECT_$PROJECT_NAME \
+					-j y \
+					-o $DIR_TO_PARSE/LOGS/COMPRESSION/MD5_CHECK.log \
+				-hold_jid $MD5_HOLD_LIST \
+				$SCRIPT_REPO/md5_check.sh \
+					$DIR_TO_PARSE
+			}
+
+		MD5_CHECK_NO_HOLD_ID ()
+			{
+				echo \
+				qsub \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+				-N MD5_CHECK_ENTIRE_PROJECT_$PROJECT_NAME \
+					-j y \
+					-o $DIR_TO_PARSE/LOGS/COMPRESSION/MD5_CHECK.log \
+				$SCRIPT_REPO/md5_check.sh \
+					$DIR_TO_PARSE
+			}
+
+	# Moved to bam_cram_validate_compare.sh and used an if statement to create only once.  Need to test!
+	# echo -e SAMPLE\\tCRAM_CONVERSION_SUCCESS\\tCRAM_ONLY_ERRORS\\tNUMBER_OF_CRAM_ONLY_ERRORS >| $DIR_TO_PARSE/cram_conversion_validation.list
+
+	# Pass variable (vcf/txt/cram) file path to function and call $FILE within function
+
+	echo
+	echo NOW LOOKING FOR BAM FILES
+	echo
+
+		for FILE in $(find $DIR_TO_PARSE -type f -name "*.bam" | egrep -v 'HC.bam$|[[:space:]]')
+			do
+				BASENAME=$(basename $FILE)
+				UNIQUE_ID=$(echo $BASENAME | sed 's/@/_/g') # If there is an @ in the qsub or holdId name it breaks
+
+				let COUNTER=COUNTER+1 # counter is used for some log or output names if there are multiple copies of a sample file within the directory as to not overwrite outputs
+
+				if [[ $FILE == *".bam" ]]; then
+					let BAM_COUNTER=BAM_COUNTER+1 # number will match the counter number used for logs and output files like bam/cram validation
+					# case $FILE in *02_CIDR_RND*)
+					case $FILE in *[Rr][Nn][Dd]*)
+
+						CRAM_DIR=$(echo $FILE | sed -r 's/BAM.*/CRAM/g')
+							mkdir -p $CRAM_DIR
+
+						BAM_TO_CRAM_CONVERSION_RND
+						BAM_VALIDATOR
+						CRAM_VALIDATOR
+						VALIDATOR_COMPARER
+						BUILD_MD5_CHECK_HOLD_LIST
+
+					;;
+						*)
+
+						CRAM_DIR=$(echo $FILE | sed -r 's/BAM.*/CRAM/g')
+							mkdir -p $CRAM_DIR
+
+						BAM_TO_CRAM_CONVERSION_PRODUCTION
+						BAM_VALIDATOR
+						CRAM_VALIDATOR
+						VALIDATOR_COMPARER
+						BUILD_MD5_CHECK_HOLD_LIST
+					;;
+					esac
+				fi
+		done
 
 if [[ $BAM_COUNTER == 0 ]]
 	then
@@ -406,3 +394,6 @@ if [[ $BAM_COUNTER == 0 ]]
 	else
 		MD5_CHECK
 fi
+
+echo
+echo CIDR DATR ARCHIVING PIPELINE FOR $PROJECT_NAME HAS FINISHED SUBMITTING AT `date`
