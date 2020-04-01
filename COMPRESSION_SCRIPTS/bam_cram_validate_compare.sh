@@ -92,7 +92,7 @@ START_FLAGSTAT=`date '+%s'`
 			>| $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
 
 			echo -e $IN_BAM\\tFAIL\\t$CRAM_ONLY_ERRORS | sed -r 's/[[:space:]]+/\t/g' >> $DIR_TO_PARSE/cram_conversion_validation.list
-			mail -s "$IN_BAM Failed Cram conversion-Cram Flagstat Output" khetric1@jhmi.edu < $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
+			mail -s "$IN_BAM Failed Cram conversion-Cram Flagstat Output" foo.email < $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
 	fi
 
 # Remove own directory once it hits zero, but if it's in the AGGREGATE folder.... Only removes that one and not the complete BAM

@@ -24,41 +24,67 @@
 
 # INPUT VARIABLES
 
-	IN_VCF=$1
+	VCF_FILES=$1
 	DIR_TO_PARSE=$2
 	TABIX_EXEC=$3
 	BGZIP_EXEC=$4
 
 START_COMPRESS_VCF=`date '+%s'`
 
-	# if any part of pipe fails set exit to non-zero
-
-		set -o pipefail
-
 	# compress vcf with bgzip and create tbi index
 
-		$BGZIP_EXEC \
-			-c \
-			--threads 4 \
-			$IN_VCF \
-		> $IN_VCF.gz \
-			&& \
-		$TABIX_EXEC\
-			-h $IN_VCF.gz
+		COMPRESS_AND_VALIDATE ()
+			{
+				# GET THE MD5 BEFORE COMPRESSION
 
-	# check the exit signal at this point.
+					ORIGINAL_MD5=$(md5sum $IN_VCF)
 
-		SCRIPT_STATUS=`echo $?`
+				# BGZIP THE FILE AND INDEX IT
 
-	# delete the tribble index
+					# if any part of pipe fails set exit to non-zero
 
-		rm -f $IN_VCF".idx"
+						set -o pipefail
+
+					$BGZIP_EXEC \
+						-c \
+						--threads 4 \
+						$IN_VCF \
+					> $IN_VCF.gz \
+						&& \
+					$TABIX_EXEC\
+						-h $IN_VCF.gz
+
+				# GET THE MD5 AFTER COMPRESSION
+
+					COMPRESSED_MD5=$(md5sum $$IN_VCF.gz)
+
+				# write both md5 to files
+
+					echo $COMPRESSED_MD5 >> $DIR_TO_PARSE/MD5_REPORTS/compressed_md5_vcf.list
+					echo $ORIGINAL_MD5 >> $DIR_TO_PARSE/MD5_REPORTS/original_md5_vcf.list
+
+				# if md5 matches delete the uncompressed file
+
+					if [[ $ORIGINAL_MD5 = $ZIPPED_MD5 ]]
+						then
+							echo "$IN_VCF" compressed successfully >> $DIR_TO_PARSE/successful_compression_jobs.list
+							rm -rvf "$IN_VCF"
+						else
+							echo "$IN_VCF" did not compress successfully >> $DIR_TO_PARSE/failed_compression_jobs_vcf.list
+					fi
+
+				# delete the tribble index for the uncompressed file
+
+					rm -f $IN_VCF".idx"
+			}
+
+	export -f COMPRESS_AND_VALIDATE
+
+	for IN_VCF in (cat $VCF_FILES);
+		do COMPRESS_AND_VALIDATE
+	done
 
 END_COMPRESS_VCF=`date '+%s'`
 
 echo $IN_VCF,COMPRESS_AND_INDEX_VCF,$HOSTNAME,$START_COMPRESS_VCF,$END_COMPRESS_VCF \
 >> $DIR_TO_PARSE/COMPRESSOR.TEST.WALL.CLOCK.TIMES.csv
-
-# exit with the signal from the program
-
-	exit $SCRIPT_STATUS

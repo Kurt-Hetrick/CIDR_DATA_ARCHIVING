@@ -61,26 +61,38 @@
 	PICARD_DIR=/mnt/linuxtools/PICARD/picard-tools-1.141
 	DATAMASH_EXE=/mnt/linuxtools/DATAMASH/datamash-1.0.6/datamash
 
-# Uses bgzip to compress vcf file and tabix to index.  Also, creates md5 values for both
+##############################
+##### COMPRESS VCF FILES #####
+##############################
 
-	COMPRESS_AND_INDEX_VCF ()
-		{
-			echo \
-			qsub $QUEUE_LIST \
-				-S /bin/bash \
-				-cwd \
-				-V \
-				-q $QUEUE_LIST \
-				-p $PRIORITY \
-			-N COMPRESS_$UNIQUE_ID \
-				-j y \
-				-o $DIR_TO_PARSE/LOGS/COMPRESSION/COMPRESS_AND_INDEX_VCF_$BASENAME.log \
-			$SCRIPT_REPO/compress_and_tabix_vcf.sh \
-				$FILE \
-				$DIR_TO_PARSE \
-				$TABIX_EXEC \
-				$BGZIP_EXEC
-		}
+	# Uses bgzip to compress vcf file and tabix to index.  Also, creates md5 values for both
+
+		COMPRESS_AND_INDEX_VCF ()
+			{
+				echo \
+				qsub $QUEUE_LIST \
+					-S /bin/bash \
+					-cwd \
+					-V \
+					-q $QUEUE_LIST \
+					-p $PRIORITY \
+					-l h_rt=336:00:00
+				-N COMPRESS_$UNIQUE_ID \
+					-j y \
+					-o $DIR_TO_PARSE/LOGS/COMPRESSION/COMPRESS_AND_INDEX_VCF_$BASENAME.log \
+				$SCRIPT_REPO/compress_and_tabix_vcf.sh \
+					$VCF_FILES \
+					$DIR_TO_PARSE \
+					$TABIX_EXEC \
+					$BGZIP_EXEC
+			}
+
+		find $DIR_TO_PARSE -type f -name "*.vcf" \
+			>| $DIR_TO_PARSE/vcf_to_compress.list
+
+		VCF_FILES="$DIR_TO_PARSE/vcf_to_compress.list"
+
+		COMPRESS_AND_INDEX_VCF
 
 # Uses samtools-1.4+ to convert bam to cram and index and remove excess tags
 
@@ -264,15 +276,12 @@
 
 # Pass variable (vcf/txt/cram) file path to function and call $FILE within function
 
-for FILE in $(find $DIR_TO_PARSE -type f | egrep 'bam$' | egrep -v 'HC.bam$|[[:space:]]')
+for FILE in $(find $DIR_TO_PARSE -type f -name "*.bam" | egrep -v 'HC.bam$|[[:space:]]')
 	do
 		BASENAME=$(basename $FILE)
 		UNIQUE_ID=$(echo $BASENAME | sed 's/@/_/g') # If there is an @ in the qsub or holdId name it breaks
 
 		let COUNTER=COUNTER+1 # counter is used for some log or output names if there are multiple copies of a sample file within the directory as to not overwrite outputs
-		if [[ $FILE == *".vcf" ]]
-			then
-				COMPRESS_AND_INDEX_VCF
 
 		if [[ $FILE == *".bam" ]]; then
 			let BAM_COUNTER=BAM_COUNTER+1 # number will match the counter number used for logs and output files like bam/cram validation
@@ -388,6 +397,8 @@ for FILE in $(find $DIR_TO_PARSE -type f | egrep 'bam$' | egrep -v 'HC.bam$|[[:s
 
 		fi
 done
+
+
 
 if [[ $BAM_COUNTER == 0 ]]
 	then
