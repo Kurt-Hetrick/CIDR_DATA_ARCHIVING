@@ -96,6 +96,11 @@ START_CRAM=`date '+%s'`
 			# add the exit signals from the previous the gatk and samtools programs, not including the index part.
 
 				SCRIPT_STATUS=$((SCRIPT_STATUS_1 + SCRIPT_STATUS_2))
+
+			# grab the md5sum from the cram file
+
+				md5sum $CRAM_DIR/$SM_TAG".cram" | awk '{print $1, "'$SM_TAG'" ".cram" }' >> $DIR_TO_PARSE/MD5_REPORTS/cram_md5.list
+				md5sum $CRAM_DIR/$SM_TAG".crai" | awk '{print $1, "'$SM_TAG'" ".crai" }' >> $DIR_TO_PARSE/MD5_REPORTS/cram_md5.list
 		}
 
 	REMOVE_TAGS_AND_CRAM_NO_BQSR ()
@@ -119,6 +124,11 @@ START_CRAM=`date '+%s'`
 					-@ 4 \
 				$CRAM_DIR/$SM_TAG".cram" && \
 					cp $CRAM_DIR/$SM_TAG".cram.crai" $CRAM_DIR/$SM_TAG".crai"
+
+			# grab the md5sum from the cram file
+
+				md5sum $CRAM_DIR/$SM_TAG".cram" | awk '{print $1, "'$SM_TAG'" ".cram" }' >> $DIR_TO_PARSE/MD5_REPORTS/cram_md5.list
+				md5sum $CRAM_DIR/$SM_TAG".crai" | awk '{print $1, "'$SM_TAG'" ".crai" }' >> $DIR_TO_PARSE/MD5_REPORTS/cram_md5.list
 		}
 
 #############################################END OF FUNCTIONS################################################

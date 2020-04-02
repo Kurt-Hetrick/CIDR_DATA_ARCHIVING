@@ -297,53 +297,6 @@
 					$SAMTOOLS_EXEC
 			}
 
-
-
-
-
-
-	# create a hold id for creating md5 checks
-
-			BUILD_MD5_CHECK_HOLD_LIST ()
-			{
-				MD5_HOLD_LIST=$MD5_HOLD_LIST'VALIDATOR_COMPARE_'$UNIQUE_ID','
-			}
-
-	# Compares MD5 between the original file and the zipped file (using zcat) to validate that the file was compressed successfully
-
-		MD5_CHECK ()
-			{
-				echo \
-				qsub\
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q $QUEUE_LIST \
-					-p $PRIORITY \
-				-N MD5_CHECK_ENTIRE_PROJECT_$PROJECT_NAME \
-					-j y \
-					-o $DIR_TO_PARSE/LOGS/COMPRESSION/MD5_CHECK.log \
-				-hold_jid $MD5_HOLD_LIST \
-				$SCRIPT_REPO/md5_check.sh \
-					$DIR_TO_PARSE
-			}
-
-		MD5_CHECK_NO_HOLD_ID ()
-			{
-				echo \
-				qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q $QUEUE_LIST \
-					-p $PRIORITY \
-				-N MD5_CHECK_ENTIRE_PROJECT_$PROJECT_NAME \
-					-j y \
-					-o $DIR_TO_PARSE/LOGS/COMPRESSION/MD5_CHECK.log \
-				$SCRIPT_REPO/md5_check.sh \
-					$DIR_TO_PARSE
-			}
-
 	# Moved to bam_cram_validate_compare.sh and used an if statement to create only once.  Need to test!
 	# echo -e SAMPLE\\tCRAM_CONVERSION_SUCCESS\\tCRAM_ONLY_ERRORS\\tNUMBER_OF_CRAM_ONLY_ERRORS >| $DIR_TO_PARSE/cram_conversion_validation.list
 
@@ -389,13 +342,6 @@
 					esac
 				fi
 		done
-
-if [[ $BAM_COUNTER == 0 ]]
-	then
-		MD5_CHECK_NO_HOLD_ID
-	else
-		MD5_CHECK
-fi
 
 echo
 echo CIDR DATR ARCHIVING PIPELINE FOR $PROJECT_NAME HAS FINISHED SUBMITTING AT `date`
