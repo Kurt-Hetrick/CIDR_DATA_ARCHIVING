@@ -1,3 +1,15 @@
+
+PROJECT=$1
+
+
+
+START_DATE=$(grep FILE)
+TOTAL_START_GB=$(grep FILE)
+
+
+
+
+
 printf \
 	"{\n \
 	\"@type\": \"MessageCard\",\n \
@@ -13,15 +25,15 @@ printf \
 printf \
 	"{\n \
 	\"name\": \"Project Folder\",\n \
-	\"value\": \"project\"\n \
+	\"value\": \"$PROJECT\"\n \
 	}, \n \
 	{\n \
 		\"name\": \"Start date\",\n \
-		\"value\": \"Fri Mar 20 16:02:37 EDT 2020\"\n \
+		\"value\": \"$START_DATE\"\n \
 	}, \n \
 	{\n \
 		\"name\": \"BEFORE COMPRESSION\",\n \
-		\"value\": \"205.561\"\n \
+		\"value\": \"$TOTAL_START_GB\"\n \
 	}],\n \
 	\"markdown\": true,\n \
 	},\n \
