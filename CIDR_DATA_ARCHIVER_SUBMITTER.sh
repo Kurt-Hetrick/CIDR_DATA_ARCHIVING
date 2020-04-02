@@ -47,6 +47,10 @@
 
 		TIME_STAMP=`date '+%s'`
 
+	# HOW MANY FILES/FOLDERS TO INCLUDE IN SUMMARY REPORTS
+
+		ROW_COUNT=15
+
 # Make directories needed for processing if not already present
 
 	mkdir -p $DIR_TO_PARSE/MD5_REPORTS
@@ -65,6 +69,31 @@
 	PICARD_DIR=/mnt/linuxtools/PICARD/picard-tools-1.141
 	DATAMASH_EXE=/mnt/linuxtools/DATAMASH/datamash-1.0.6/datamash
 	PIGZ_MODULE=pigz/2.3.4
+
+#######################################################################
+##### SUMMARIZE FILE AND FOLDER SIZES BEFORE THIS COMPRESSION RUN #####
+#######################################################################
+
+	SUMMARIZE_SIZES ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+			-N SUMMARIZE_START_$PROJECT_NAME \
+				-j y \
+				-o $DIR_TO_PARSE/LOGS/COMPRESSION/"DISK_SIZE_START_"$PROJECT_NAME".log" \
+			$SCRIPT_REPO/start_disk_size_summary.sh \
+				$DIR_TO_PARSE \
+				$ROW_COUNT \
+				$TIME_STAMP \
+				$DATAMASH_EXE
+		}
+
+	SUMMARIZE_SIZES
 
 ############################################################
 ##### GZIP SELECT OTHER FILES THAT ARE NOT BAM AND VCF #####
@@ -129,6 +158,7 @@
 				-N COMPRESS_$PROJECT_NAME \
 					-j y \
 					-o $DIR_TO_PARSE/LOGS/COMPRESSION/"ZIP_FILE_"$PROJECT_NAME".log" \
+				-hold_jid SUMMARIZE_START_$PROJECT_NAME \
 				$SCRIPT_REPO/zip_file.sh \
 					$OTHER_FILES \
 					$DIR_TO_PARSE \
@@ -168,6 +198,7 @@
 				-N COMPRESS_VCF_$PROJECT_NAME \
 					-j y \
 					-o $DIR_TO_PARSE/LOGS/COMPRESSION/COMPRESS_AND_INDEX_VCF_$PROJECT_NAME".log" \
+				-hold_jid SUMMARIZE_START_$PROJECT_NAME \
 				$SCRIPT_REPO/compress_and_tabix_vcf.sh \
 					$VCF_FILES \
 					$DIR_TO_PARSE \
@@ -186,24 +217,25 @@
 		BAM_TO_CRAM_CONVERSION_RND ()
 			{
 				#Remove Tags + 5-bin Quality Score (RND Projects)
-				 echo \
-				 qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q $QUEUE_LIST \
-					-p $PRIORITY \
-				 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
-					 -o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
-					 -j y \
-				 $SCRIPT_REPO/bam_to_cram_remove_tags_rnd.sh \
-					 $FILE \
-					 $DIR_TO_PARSE \
-					 $REF_GENOME \
-					 $COUNTER \
-					 $GATK_DIR \
-					 $JAVA_1_7 \
-					 $SAMTOOLS_EXEC
+					echo \
+					qsub \
+						-S /bin/bash \
+						-cwd \
+						-V \
+						-q $QUEUE_LIST \
+						-p $PRIORITY \
+					-N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
+						-o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
+						-j y \
+					-hold_jid SUMMARIZE_START_$PROJECT_NAME \
+					$SCRIPT_REPO/bam_to_cram_remove_tags_rnd.sh \
+						$FILE \
+						$DIR_TO_PARSE \
+						$REF_GENOME \
+						$COUNTER \
+						$GATK_DIR \
+						$JAVA_1_7 \
+						$SAMTOOLS_EXEC
 			}
 
 	# Uses samtools-1.4 (or higher) to convert bam to cram and index and remove excess tags
@@ -211,21 +243,22 @@
 		BAM_TO_CRAM_CONVERSION_PRODUCTION ()
 			{
 				#Remove Tags
-				 echo \
-				 qsub \
-					-S /bin/bash \
-					-cwd \
-					-V \
-					-q $QUEUE_LIST \
-					-p $PRIORITY \
-				 -N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
-					 -o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
-					 -j y \
-				 $SCRIPT_REPO/bam_to_cram_remove_tags.sh \
-					 $FILE \
-					 $DIR_TO_PARSE \
-					 $REF_GENOME \
-					 $SAMTOOLS_EXEC
+					echo \
+					qsub \
+						-S /bin/bash \
+						-cwd \
+						-V \
+						-q $QUEUE_LIST \
+						-p $PRIORITY \
+					-N BAM_TO_CRAM_CONVERSION_$UNIQUE_ID \
+						-o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_TO_CRAM_$BASENAME"_"$COUNTER.log \
+						-j y \
+					-hold_jid SUMMARIZE_START_$PROJECT_NAME \
+					$SCRIPT_REPO/bam_to_cram_remove_tags.sh \
+						$FILE \
+						$DIR_TO_PARSE \
+						$REF_GENOME \
+						$SAMTOOLS_EXEC
 			}
 
 	# Uses ValidateSam to report any errors found within the original BAM file
@@ -242,6 +275,7 @@
 				-N BAM_VALIDATOR_$UNIQUE_ID \
 					-o $DIR_TO_PARSE/LOGS/COMPRESSION/BAM_VALIDATOR_$BASENAME"_"$COUNTER.log \
 					-j y \
+				-hold_jid SUMMARIZE_START_$PROJECT_NAME \
 				$SCRIPT_REPO/bam_validation.sh \
 					$FILE \
 					$DIR_TO_PARSE \
