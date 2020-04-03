@@ -1,95 +1,182 @@
+# ---qsub parameter settings---
+# --these can be overrode at qsub invocation--
 
-PROJECT=$1
+# tell sge to execute in bash
+#$ -S /bin/bash
 
+# tell sge that you are in the users current working directory
+#$ -cwd
 
+# tell sge to export the users environment variables
+#$ -V
 
-START_DATE=$(grep FILE)
-TOTAL_START_GB=$(grep FILE)
+# tell sge to submit at this priority setting
+#$ -p -1020
 
+# tell sge to output both stderr and stdout to the same file
+#$ -j y
 
+# export all variables, useful to find out what compute node the program was executed on
 
+	set
 
+	echo
 
-printf \
-	"{\n \
-	\"@type\": \"MessageCard\",\n \
-	\"@context\": \"http://schema.org/extensions\",\n \
-	\"themeColor\": \"0078D7\",\n \
-	\"summary\": \"Before and after project compression summary\", \n \
-	\"sections\": [\n\
-	{ \n\
-		\"activityTitle\": \"Before Compression Summary for project\",\n\
+# INPUT VARIABLES
+
+	DIR_TO_PARSE=$1
+		PROJECT_NAME=$(basename $PROJECT)
+	TIME_STAMP=$2
+	PROJECT_START_SUMMARY_FILE=$3
+	ROW_COUNT=$4
+
+# OTHER VARIABLES
+
+	START_DATE=$(grep "start;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
+	TOTAL_START_GB=$(grep "before_compress_Gb;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
+	EXT_BEFORE_COMPRESSION_SUMMARY=$(grep "ext_b4_compress;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
+	FILES_ALREADY_COMPRESSED_BEFORE_RUN_SUMMARY=$(grep "ext_already_compressed;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
+
+##########################################################
+##### Print out the message card header to json file #####
+##########################################################
+
+	printf \
+		"{\n \
+		\"@type\": \"MessageCard\",\n \
+		\"@context\": \"http://schema.org/extensions\",\n \
+		\"themeColor\": \"0078D7\",\n \
+		\"summary\": \"Before and after project compression summary\", \n \
+		\"sections\": [\n\
+		{ \n\
+			\"activityTitle\": \"Before Compression Summary for project\",\n\
+				\"facts\": [\n\
+		" \
+	>| $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
+
+#######################################################################################
+##### Print out the overall before and after disk space summary and percent saved #####
+#######################################################################################
+
+	# project folder size after compression run
+
+	# CALCULATE THE FOLDER SIZE AFTER THE RUN
+	# CALCULATE THE PERCENT OF SPACE SAVED
+
+		TOTAL_END_GB=$(du -s $DIR_TO_PARSE | awk '{print $1/1024/1024}')
+		PERCENT_SAVED=$(echo "$TOTAL_END_GB / $TOTAL_START_GB" | bc -l)
+
+	# print overall summary to json file
+
+		printf \
+			"{\n \
+			\"name\": \"Project Folder\",\n \
+			\"value\": \"$PROJECT\"\n \
+			}, \n \
+			{\n \
+				\"name\": \"Start date\",\n \
+				\"value\": \"$START_DATE\"\n \
+			}, \n \
+			{\n \
+				\"name\": \"BEFORE COMPRESSION\",\n \
+				\"value\": \"$TOTAL_START_GB Gb\"\n \
+			},\n \
+			{\n \
+				\"name\": \"AFTER COMPRESSION\",\n \
+				\"value\": \"$TOTAL_END_GB Gb\"\n \
+			},\n \
+			{\n \
+				\"name\": \"PERCENT SAVED\",\n \
+				\"value\": \"$PERCENT_SAVED\"\n \
+			}],\n \
+			\"markdown\": true,\n \
+			},\n \
+			" \
+		>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
+
+###################################################################
+##### Print out the file extension before compression summary #####
+###################################################################
+
+	printf \
+		"{\n \
+		\"activityTitle\": \"Top $ROW_COUNT file extensions by disk space used before compression:\",\n\
 			\"facts\": [\n\
-"
+		" \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
-printf \
-	"{\n \
-	\"name\": \"Project Folder\",\n \
-	\"value\": \"$PROJECT\"\n \
-	}, \n \
-	{\n \
-		\"name\": \"Start date\",\n \
-		\"value\": \"$START_DATE\"\n \
-	}, \n \
-	{\n \
-		\"name\": \"BEFORE COMPRESSION\",\n \
-		\"value\": \"$TOTAL_START_GB\"\n \
-	}],\n \
-	\"markdown\": true,\n \
-	},\n \
-	"
+	echo $EXT_BEFORE_COMPRESSION_SUMMARY \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
-printf \
-	"{\n \
-	\"activityTitle\": \"Top 15 file extensions by disk space used:\",\n\
-		\"facts\": [\n\
-	"
+	printf \
+		"],\n \
+		\"markdown\": true,\n \
+		},\n \
+		" \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
+##################################################################
+##### Print out the file extension after compression summary #####
+##################################################################
 
-find /path/to/project/ -type f -exec du -a {} + \
-	| awk 'BEGIN {FS="."} {print $1,$NF}' \
-	| sed -r 's/[[:space:]]+/\t/g' \
-	| sort -k 3,3 \
-	| datamash -g 3 sum 1 \
-	| sort -k 2,2nr \
-	|  awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$1"\x22," , "\x22value\x22"":" , "\x22"($2/1024/1024) , "Gb" "\x22" "}"  }' \
-	| head \
-	| datamash collapse 1
+	printf \
+		"{\n \
+		\"activityTitle\": \"Top $ROW_COUNT file extensions by disk space used after compression:\",\n\
+			\"facts\": [\n\
+		" \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
-printf \
-"],\n \
-\"markdown\": true,\n \
-},\n \
-"
+	find $DIR_TO_PARSE -type f -exec du -a {} + \
+		| awk 'BEGIN {FS="."} {print $1,$NF}' \
+		| sed -r 's/[[:space:]]+/\t/g' \
+		| sort -k 3,3 \
+		| datamash -g 3 sum 1 \
+		| sort -k 2,2nr \
+		|  awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$1"\x22," , "\x22value\x22"":" , "\x22"($2/1024/1024) , "Gb" "\x22" "}"  }' \
+		| head $ROW_COUNT \
+		| datamash collapse 1 \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
-printf \
-	"{\n \
-	\"activityTitle\": \"Files that have already been gzipped before this compression run by original type (Top 15):\",\n\
-		\"facts\": [\n\
-	"
+	printf \
+		"],\n \
+		\"markdown\": true,\n \
+		},\n \
+		" \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
-find /path/to/project/ -type f -name "*.gz" -exec du -a {} + \
-	| awk 'BEGIN {FS="[./]";OFS="\t"} {print $1,$(NF-1)"."$NF}' \
-	| sed -r 's/[[:space:]]+/\t/g' \
-	| sort -k 2,2 \
-	| datamash -g 2 sum 1 \
-	| sort -k 2,2nr \
-	|  awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$1"\x22," , "\x22value\x22"":" , "\x22"($2/1024/1024) , "Gb" "\x22" "}"  }' \
-	| head
+#################################################################################################
+##### Print out the file extension that were already compressed before this compression run #####
+#################################################################################################
 
-printf \
-"],\n \
-\"markdown\": true,\n \
-},\n \
-"
+	printf \
+		"{\n \
+		\"activityTitle\": \"Files that have already been gzipped before this compression run by original type (Top 15):\",\n\
+			\"facts\": [\n\
+		" \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
-printf \
-	"{\n \
-	\"activityTitle\": \"Top 15 subfolders by disk space used:\",\n\
-		\"facts\": [\n\
-	"
+	echo $FILES_ALREADY_COMPRESSED_BEFORE_RUN_SUMMARY \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
-du -s /path/to/project/*/ \
+	printf \
+		"],\n \
+		\"markdown\": true,\n \
+		},\n \
+		" \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
+
+#################################################################################
+##### Print out the top level subfolders disk space used before compression #####
+#################################################################################
+
+	printf \
+		"{\n \
+		\"activityTitle\": \"Top 15 subfolders by disk space used:\",\n\
+			\"facts\": [\n\
+		" \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
+
+du -s $DIR_TO_PARSE/*/ \
 	| sort -k 1,1nr \
 	| awk 'BEGIN {FS="/"} {print $1,$(NF-1)}' \
 	|  awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$2"\x22," , "\x22value\x22"":" , "\x22"($1/1024/1024) , "Gb" "\x22" "}"  }' \

@@ -34,13 +34,13 @@ START_SUMMARY=`date '+%s'`
 
 # GRAB THE START TIME
 
-	printf "start;"\\t"`date`" | awk 'BEGIN {FS="\t"} {print $2}' \
+	echo start";" `date` \
 	>| $INPUT_DIRECTORY/$INPUT_DIR_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
 
 # PROJECT FOLDER SIZE BEFORE COMPRESSION
 
 	du -s $INPUT_DIRECTORY \
-		| awk '{print "before_compress_Gb;" "\t" $1/1024/1024}' \
+		| awk '{print "before_compress;" "\t" $1/1024/1024,"Gb"}' \
 	>> $INPUT_DIRECTORY/$INPUT_DIR_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
 
 # CREATE A JSON FORMATTED STRING FOR THE TOP X NUMBER OF FILE EXTENSIONS BEFORE COMPRESSION
@@ -55,7 +55,7 @@ START_SUMMARY=`date '+%s'`
 		| awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$1"\x22," , "\x22value\x22"":" , "\x22"($2/1024/1024) , "Gb" "\x22" "}"  }' \
 		| head -n $ROW_COUNT \
 		| $DATAMASH_EXE collapse 1 \
-		| awk 'BEGIN {FS=";"} {print "ext_b4_compress;" "\t" $1}' \
+		| awk 'BEGIN {FS=";"} {print "ext_b4_compress;" $1}' \
 	>> $INPUT_DIRECTORY/$INPUT_DIR_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
 
 # CREATE A JSON FORMATTED STRING FOR THE TOP X NUMBER OF FILE EXTENSIONS THAT HAVE ALREADY BEEN GZIPPED BEFORE THIS RUN.
@@ -70,7 +70,7 @@ START_SUMMARY=`date '+%s'`
 		| awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$1"\x22," , "\x22value\x22"":" , "\x22"($2/1024/1024) , "Gb" "\x22" "}"  }' \
 		| head -n $ROW_COUNT \
 		| DATAMASH_EXE collapse 1 \
-		| awk 'BEGIN {FS=";"} {print "ext_already_compressed;" "\t" $1}' \
+		| awk 'BEGIN {FS=";"} {print "ext_already_compressed;" $1}' \
 	>> $INPUT_DIRECTORY/$INPUT_DIR_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
 
 # CREATE A JSON FORMATTED STRING FOR THE TOP X NUMBER OF FILE EXTENSIONS THAT HAVE ALREADY BEEN GZIPPED BEFORE THIS RUN.
