@@ -27,15 +27,19 @@
 	DIR_TO_PARSE=$1
 		PROJECT_NAME=$(basename $PROJECT)
 	TIME_STAMP=$2
-	PROJECT_START_SUMMARY_FILE=$3
-	ROW_COUNT=$4
+	ROW_COUNT=$3
+	WEBHOOK=$4
 
 # OTHER VARIABLES
 
-	START_DATE=$(grep "start;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
-	TOTAL_START_GB=$(grep "before_compress_Gb;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
-	EXT_BEFORE_COMPRESSION_SUMMARY=$(grep "ext_b4_compress;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
-	FILES_ALREADY_COMPRESSED_BEFORE_RUN_SUMMARY=$(grep "ext_already_compressed;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
+	PROJECT_START_SUMMARY_FILE=$(ls DIR_TO_PARSE/$PROJECT_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary")
+		START_DATE=$(grep "start;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
+		TOTAL_START_GB=$(grep "before_compress_Gb;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
+		EXT_BEFORE_COMPRESSION_SUMMARY=$(grep "ext_b4_compress;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
+		FILES_ALREADY_COMPRESSED_BEFORE_RUN_SUMMARY=$(grep "ext_already_compressed;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
+		SUBFOLDERS_BEFORE_COMPRESSION_SUMMARY=$(grep "subfolder_start;" $PROJECT_START_SUMMARY_FILE | awk 'BEGIN {FS="\t"} {print $2}')
+
+START_FINISHING_SUMMARY=`date '+%s'`
 
 ##########################################################
 ##### Print out the message card header to json file #####
@@ -65,6 +69,7 @@
 
 		TOTAL_END_GB=$(du -s $DIR_TO_PARSE | awk '{print $1/1024/1024}')
 		PERCENT_SAVED=$(echo "$TOTAL_END_GB / $TOTAL_START_GB" | bc -l)
+		FINISHED_DATE=$(`date`)
 
 	# print overall summary to json file
 
@@ -76,6 +81,10 @@
 			{\n \
 				\"name\": \"Start date\",\n \
 				\"value\": \"$START_DATE\"\n \
+			}, \n \
+			{\n \
+				\"name\": \"Finished date\",\n \
+				\"value\": \"$FINISHED_DATE\"\n \
 			}, \n \
 			{\n \
 				\"name\": \"BEFORE COMPRESSION\",\n \
@@ -171,22 +180,58 @@
 
 	printf \
 		"{\n \
-		\"activityTitle\": \"Top 15 subfolders by disk space used:\",\n\
+		\"activityTitle\": \"Top $ROW_COUNT first level subfolders by disk space used before compression:\",\n\
 			\"facts\": [\n\
 		" \
 	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
-du -s $DIR_TO_PARSE/*/ \
-	| sort -k 1,1nr \
-	| awk 'BEGIN {FS="/"} {print $1,$(NF-1)}' \
-	|  awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$2"\x22," , "\x22value\x22"":" , "\x22"($1/1024/1024) , "Gb" "\x22" "}"  }' \
-	| head \
-	| datamash collapse 1
+	echo $SUBFOLDERS_BEFORE_COMPRESSION_SUMMARY \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
-printf \
-"],\n \
-\"markdown\": true\n \
-},\n \
-]\n \
-}\
-"
+	printf \
+		"],\n \
+		\"markdown\": true,\n \
+		},\n \
+		" \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
+
+################################################################################
+##### Print out the top level subfolders disk space used after compression #####
+################################################################################
+
+	printf \
+		"{\n \
+		\"activityTitle\": \"Top $ROW_COUNT first level subfolders by disk space used after compression:\",\n\
+			\"facts\": [\n\
+		" \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
+
+	du -s $DIR_TO_PARSE/*/ \
+		| sort -k 1,1nr \
+		| awk 'BEGIN {FS="/"} {print $1,$(NF-1)}' \
+		|  awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$2"\x22," , "\x22value\x22"":" , "\x22"($1/1024/1024) , "Gb" "\x22" "}"  }' \
+		| head $ROW_COUNT \
+		| datamash collapse 1 \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
+
+	printf \
+		"],\n \
+		\"markdown\": true\n \
+		},\n \
+		]\n \
+		}\
+		" \
+	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
+
+############################
+##### Send out summary #####
+############################
+
+	curl -H "Content-Type: application/json" \
+	--data @$DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json \
+	$WEBHOOK
+
+END_FINISHING_SUMMARY=`date '+%s'`
+
+echo $PROJECT_NAME,FINISH_SUMMARY,$HOSTNAME,$START_FINISHING_SUMMARY,$END_FINISHING_SUMMARY \
+>> $DIR_TO_PARSE/COMPRESSOR.WALL.CLOCK.TIMES.csv

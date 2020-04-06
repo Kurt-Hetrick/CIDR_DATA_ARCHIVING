@@ -51,13 +51,17 @@
 
 		ROW_COUNT=15
 
+	# address to send end of run summary
+
+		WEBHOOK=$(ls $SCRIPT_REPO/../webhook.txt)
+
 # Make directories needed for processing if not already present
 
 	mkdir -p $DIR_TO_PARSE/MD5_REPORTS
 	mkdir -p $DIR_TO_PARSE/LOGS/COMPRESSION
 	mkdir -p $DIR_TO_PARSE/TEMP
 	mkdir -p $DIR_TO_PARSE/BAM_CONVERSION_VALIDATION
-	mkdir -p $MAIN_DIR/CRAM_CONVERSION_VALIDATION
+	mkdir -p $DIR_TO_PARSE/CRAM_CONVERSION_VALIDATION
 
 # PIPELINE PROGRAMS
 
@@ -74,7 +78,7 @@
 ##### SUMMARIZE FILE AND FOLDER SIZES BEFORE THIS COMPRESSION RUN #####
 #######################################################################
 
-	SUMMARIZE_SIZES ()
+	SUMMARIZE_SIZES_START ()
 		{
 			echo \
 			qsub \
@@ -93,7 +97,7 @@
 				$DATAMASH_EXE
 		}
 
-	SUMMARIZE_SIZES
+	SUMMARIZE_SIZES_START
 
 ############################################################
 ##### GZIP SELECT OTHER FILES THAT ARE NOT BAM AND VCF #####
@@ -155,7 +159,7 @@
 					-q $QUEUE_LIST \
 					-p $PRIORITY \
 					-l h_rt=336:00:00 \
-				-N COMPRESS_$PROJECT_NAME \
+				-N GZIP_$PROJECT_NAME \
 					-j y \
 					-o $DIR_TO_PARSE/LOGS/COMPRESSION/"ZIP_FILE_"$PROJECT_NAME".log" \
 				-hold_jid SUMMARIZE_START_$PROJECT_NAME \
@@ -198,7 +202,7 @@
 				-N COMPRESS_VCF_$PROJECT_NAME \
 					-j y \
 					-o $DIR_TO_PARSE/LOGS/COMPRESSION/COMPRESS_AND_INDEX_VCF_$PROJECT_NAME".log" \
-				-hold_jid SUMMARIZE_START_$PROJECT_NAME \
+				-hold_jid SUMMARIZE_START_$PROJECT_NAME, \
 				$SCRIPT_REPO/compress_and_tabix_vcf.sh \
 					$VCF_FILES \
 					$DIR_TO_PARSE \
@@ -331,6 +335,13 @@
 					$SAMTOOLS_EXEC
 			}
 
+	# Build HOLD ID for BAM TO CRAM COMPRESSION JOBS AS A JOB DEPENDENCY FOR END OF RUN SUMMARY
+
+		BUILD_CRAM_TO_BAM_HOLD_LIST ()
+		{
+			MD5_HOLD_LIST=$MD5_HOLD_LIST'VALIDATOR_COMPARE_'$UNIQUE_ID','
+		}
+
 	# Moved to bam_cram_validate_compare.sh and used an if statement to create only once.  Need to test!
 	# echo -e SAMPLE\\tCRAM_CONVERSION_SUCCESS\\tCRAM_ONLY_ERRORS\\tNUMBER_OF_CRAM_ONLY_ERRORS >| $DIR_TO_PARSE/cram_conversion_validation.list
 
@@ -359,7 +370,7 @@
 						BAM_VALIDATOR
 						CRAM_VALIDATOR
 						VALIDATOR_COMPARER
-						BUILD_MD5_CHECK_HOLD_LIST
+						BUILD_CRAM_TO_BAM_HOLD_LIST
 
 					;;
 						*)
@@ -371,11 +382,38 @@
 						BAM_VALIDATOR
 						CRAM_VALIDATOR
 						VALIDATOR_COMPARER
-						BUILD_MD5_CHECK_HOLD_LIST
+						BUILD_CRAM_TO_BAM_HOLD_LIST
 					;;
 					esac
 				fi
 		done
+
+#######################################################################
+##### SUMMARIZE FILE AND FOLDER SIZES BEFORE THIS COMPRESSION RUN #####
+#######################################################################
+
+	SUMMARIZE_SIZES_FINISH ()
+		{
+			echo \
+			qsub \
+				-S /bin/bash \
+				-cwd \
+				-V \
+				-q $QUEUE_LIST \
+				-p $PRIORITY \
+			-N SUMMARIZE_FINISH_$PROJECT_NAME \
+				-j y \
+				-o $DIR_TO_PARSE/LOGS/COMPRESSION/"DISK_SIZE_FINISH_"$PROJECT_NAME".log" \
+			-hold_jid GZIP_$PROJECT_NAME,COMPRESS_VCF_$PROJECT_NAME,$MD5_HOLD_LIST \
+			$SCRIPT_REPO/disk_space_summary_finish.sh \
+				$DIR_TO_PARSE \
+				$TIME_STAMP \
+				$ROW_COUNT \
+				$WEBHOOK
+		}
+
+	SUMMARIZE_SIZES_FINISH
+
 
 echo
 echo CIDR DATR ARCHIVING PIPELINE FOR $PROJECT_NAME HAS FINISHED SUBMITTING AT `date`
