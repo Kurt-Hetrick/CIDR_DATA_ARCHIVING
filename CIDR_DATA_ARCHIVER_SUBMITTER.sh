@@ -53,7 +53,13 @@
 
 	# address to send end of run summary
 
-		WEBHOOK=$(ls $SCRIPT_REPO/../webhook.txt)
+		WEBHOOK=$(cat $SCRIPT_REPO/../webhook.txt)
+		EMAIL=$(cat $SCRIPT_REPO/../email.txt)
+
+	# grab submitter's name
+
+		SUBMITTER_ID=`whoami`
+		PERSON_NAME=`getent passwd | awk 'BEGIN {FS=":"} $1=="'$SUBMITTER_ID'" {print $5}'`
 
 # Make directories needed for processing if not already present
 
@@ -332,7 +338,8 @@
 					$DIR_TO_PARSE \
 					$COUNTER \
 					$DATAMASH_EXE \
-					$SAMTOOLS_EXEC
+					$SAMTOOLS_EXEC \
+					$EMAIL
 			}
 
 	# Build HOLD ID for BAM TO CRAM COMPRESSION JOBS AS A JOB DEPENDENCY FOR END OF RUN SUMMARY
@@ -409,11 +416,17 @@
 				$DIR_TO_PARSE \
 				$TIME_STAMP \
 				$ROW_COUNT \
-				$WEBHOOK
+				$WEBHOOK \
+				$EMAIL
 		}
 
 	SUMMARIZE_SIZES_FINISH
 
+# EMAIL WHEN DONE SUBMITTING
+
+	printf "$PROJECT_NAME\nhas finished submitting at\n`date`\nby `whoami`" \
+		| mail -s "$PERSON_NAME has submitted CIDR_DATA_ARCHIVER_SUBMITTER.sh" \
+			$EMAIL
 
 echo
 echo CIDR DATR ARCHIVING PIPELINE FOR $PROJECT_NAME HAS FINISHED SUBMITTING AT `date`

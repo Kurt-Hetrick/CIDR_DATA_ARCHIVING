@@ -33,6 +33,7 @@
 	COUNTER=$3
 	DATAMASH_EXE=$4
 	SAMTOOLS_EXE=$5
+	EMAIL=$6
 
 # Made this explicit if the validation output files are not found it will fail
 # this does not account for if the file is empty.
@@ -92,7 +93,7 @@ START_FLAGSTAT=`date '+%s'`
 			>| $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
 
 			echo -e $IN_BAM\\tFAIL\\t$CRAM_ONLY_ERRORS | sed -r 's/[[:space:]]+/\t/g' >> $DIR_TO_PARSE/cram_conversion_validation.list
-			mail -s "$IN_BAM Failed Cram conversion-Cram Flagstat Output" foo.email < $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
+			mail -s "$IN_BAM Failed Cram conversion-Cram Flagstat Output" $EMAIL < $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
 	fi
 
 # Remove own directory once it hits zero, but if it's in the AGGREGATE folder.... Only removes that one and not the complete BAM

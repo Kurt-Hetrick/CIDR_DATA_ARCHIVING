@@ -29,6 +29,7 @@
 	TIME_STAMP=$2
 	ROW_COUNT=$3
 	WEBHOOK=$4
+	EMAIL=$5
 
 # OTHER VARIABLES
 
@@ -223,13 +224,37 @@ START_FINISHING_SUMMARY=`date '+%s'`
 		" \
 	>> $DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json
 
-############################
-##### Send out summary #####
-############################
+#####################################
+##### Send out summary to teams #####
+#####################################
 
 	curl -H "Content-Type: application/json" \
 	--data @$DIR_TO_PARSE/$PROJECT_NAME_$TIME_STAMP_DATA_ARCHIVING_SUMMARY.json \
 	$WEBHOOK
+
+#############################################################
+##### Send out notification if files failed to compress #####
+#############################################################
+
+	if [[ -f $DIR_TO_PARSE/failed_compression_jobs_other_files.list ]]
+		then
+			mail -s "FILES FAILED TO COMPRESS IN $PROJECT_NAME!" \
+			$EMAIL \
+			< $DIR_TO_PARSE/failed_compression_jobs_other_files.list
+				sleep 2s
+	fi
+
+#################################################################
+##### Send out notification if vcf files failed to compress #####
+#################################################################
+
+	if [[ -f $DIR_TO_PARSE/failed_compression_jobs_vcf.list ]]
+		then
+			mail -s "VCF FILES FAILED TO COMPRESS IN $PROJECT_NAME!" \
+			$EMAIL \
+			< $DIR_TO_PARSE/failed_compression_jobs_vcf.list
+				sleep 2s
+	fi
 
 END_FINISHING_SUMMARY=`date '+%s'`
 
