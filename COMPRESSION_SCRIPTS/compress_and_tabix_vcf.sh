@@ -26,6 +26,7 @@
 
 	VCF_FILES=$1
 	DIR_TO_PARSE=$2
+		PROJECT_NAME=$(basename $DIR_TO_PARSE)
 	TABIX_EXEC=$3
 	BGZIP_EXEC=$4
 
@@ -38,7 +39,7 @@ START_COMPRESS_VCF=`date '+%s'`
 			{
 				# GET THE MD5 BEFORE COMPRESSION
 
-					ORIGINAL_MD5=$(md5sum $IN_VCF)
+					ORIGINAL_MD5=$(md5sum $IN_VCF | awk '{print $1}')
 
 				# BGZIP THE FILE AND INDEX IT
 
@@ -57,16 +58,16 @@ START_COMPRESS_VCF=`date '+%s'`
 
 				# GET THE MD5 AFTER COMPRESSION
 
-					COMPRESSED_MD5=$(md5sum $$IN_VCF.gz)
+					COMPRESSED_MD5=$(md5sum $IN_VCF.gz)
 
 				# write both md5 to files
 
 					echo $COMPRESSED_MD5 >> $DIR_TO_PARSE/MD5_REPORTS/compressed_md5_vcf.list
-					echo $ORIGINAL_MD5 >> $DIR_TO_PARSE/MD5_REPORTS/original_md5_vcf.list
+					echo $ORIGINAL_MD5 $IN_VCF >> $DIR_TO_PARSE/MD5_REPORTS/original_md5_vcf.list
 
 				# check md5sum of zipped file using zcat
 
-					ZIPPED_MD5=$(zcat $IN_FILE.gz | md5sum)
+					ZIPPED_MD5=$(zcat $IN_VCF.gz | md5sum | awk '{print $1}')
 
 				# if md5 matches delete the uncompressed file
 
@@ -91,5 +92,5 @@ START_COMPRESS_VCF=`date '+%s'`
 
 END_COMPRESS_VCF=`date '+%s'`
 
-echo $VCF_FILES,COMPRESS_AND_INDEX_VCF,$HOSTNAME,$START_COMPRESS_VCF,$END_COMPRESS_VCF \
+echo $PROJECT_NAME,COMPRESS_AND_INDEX_VCF,$HOSTNAME,$START_COMPRESS_VCF,$END_COMPRESS_VCF \
 >> $DIR_TO_PARSE/COMPRESSOR.WALL.CLOCK.TIMES.csv

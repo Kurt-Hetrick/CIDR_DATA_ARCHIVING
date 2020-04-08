@@ -80,6 +80,8 @@ START_FLAGSTAT=`date '+%s'`
 			# Put this back in after debugging.
 			rm -vf $BAM_DIR/$SM_TAG.bam
 			rm -vf $BAM_DIR/$SM_TAG.bai
+			rm -vf $DIR_TO_PARSE/TEMP/$SM_TAG"_"$COUNTER"_binned.bam"
+			rm -vf $DIR_TO_PARSE/TEMP/$SM_TAG"_"$COUNTER"_binned.bai"
 		else
 			echo $SM_TAG CRAM COMPRESSION WAS UNSUCCESSFUL
 			# (echo BAM; cat $DIR_TO_PARSE/TEMP/$SM_TAG".bam."$COUNTER".flagstat.out"; echo -e \\nCRAM; cat $DIR_TO_PARSE/TEMP/$SM_TAG".cram."$COUNTER".flagstat.out") \
@@ -111,5 +113,5 @@ START_FLAGSTAT=`date '+%s'`
 END_FLAGSTAT=`date '+%s'`
 
  echo $CRAM_DIR/$SM_TAG".cram",BAM_CRAM_VALIDATION_COMPARE,$HOSTNAME,$START_FLAGSTAT,$END_FLAGSTAT \
- >> $DIR_TO_PARSE/COMPRESSOR.TEST.WALL.CLOCK.TIMES.csv
+ >> $DIR_TO_PARSE/COMPRESSOR.WALL.CLOCK.TIMES.csv
 

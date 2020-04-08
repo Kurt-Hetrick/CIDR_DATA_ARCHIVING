@@ -26,6 +26,7 @@
 
 	IN_FILES=$1
 	DIR_TO_PARSE=$2
+		PROJECT_NAME=$(basename $DIR_TO_PARSE)
 	PIGZ_MODULE=$3
 		module load $PIGZ_MODULE
 
@@ -37,7 +38,7 @@ START_GZIP=`date '+%s'`
 		{
 			# GET THE MD5 BEFORE COMPRESSION
 
-				ORIGINAL_MD5=$(md5sum $FILE)
+				ORIGINAL_MD5=$(md5sum $FILE | awk '{print $1}')
 
 			# BGZIP THE FILE AND INDEX IT
 
@@ -47,16 +48,16 @@ START_GZIP=`date '+%s'`
 
 			# GET THE MD5 AFTER COMPRESSION
 
-				COMPRESSED_MD5=$(md5sum $$FILE.gz)
+				COMPRESSED_MD5=$(md5sum $FILE.gz)
 
 			# check md5sum of zipped file using zcat
 
-				ZIPPED_MD5=$(zcat $IN_FILE.gz | md5sum)
+				ZIPPED_MD5=$(zcat $FILE.gz | md5sum | awk '{print $1}')
 
 			# write both md5 to files
 
 				echo $COMPRESSED_MD5 >> $DIR_TO_PARSE/MD5_REPORTS/compressed_md5_other_files.list
-				echo $ORIGINAL_MD5 >> $DIR_TO_PARSE/MD5_REPORTS/original_md5_other_files.list
+				echo $ORIGINAL_MD5 $FILE >> $DIR_TO_PARSE/MD5_REPORTS/original_md5_other_files.list
 
 			# if md5 matches delete the uncompressed file
 
@@ -78,5 +79,5 @@ START_GZIP=`date '+%s'`
 
 END_GZIP=`date '+%s'`
 
- echo OTHER_FILES,GZIP,$HOSTNAME,$START_GZIP,$END_GZIP \
+ echo $PROJECT_NAME,PIGZ,$HOSTNAME,$START_GZIP,$END_GZIP \
  >> $DIR_TO_PARSE/COMPRESSOR.WALL.CLOCK.TIMES.csv

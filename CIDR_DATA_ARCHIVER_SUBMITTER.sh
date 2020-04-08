@@ -118,9 +118,9 @@
 	# Doing this at the beginning means that i don't have to work about compressing files that are being generated from this pipeline run
 
 	echo
-	echo LOOKING FOR THE FOLLOWING FILES TO COMPRESS:
-	echo txt,csv,intervals,fasta,idat,ped,fastq,bed,lgen,sam,xml,log,sample_interval_summary,genome,tped
-	echo jpg,kin0,analysis,gtc,sas7bdata,locs,gdepth,lgenf,mpileup,backup
+	echo "echo LOOKING FOR THE FOLLOWING FILES TO COMPRESS:"
+	echo "echo txt,csv,intervals,fasta,idat,ped,fastq,bed,lgen,sam,xml,log,sample_interval_summary,genome,tped"
+	echo "echo jpg,kin0,analysis,gtc,sas7bdata,locs,gdepth,lgenf,mpileup,backup"
 	echo
 
 		find $DIR_TO_PARSE -type f \
@@ -167,9 +167,9 @@
 					-l h_rt=336:00:00 \
 				-N GZIP_$PROJECT_NAME \
 					-j y \
-					-o $DIR_TO_PARSE/LOGS/COMPRESSION/"ZIP_FILE_"$PROJECT_NAME".log" \
+					-o $DIR_TO_PARSE/LOGS/COMPRESSION/"GZIP_FILE_"$PROJECT_NAME".log" \
 				-hold_jid SUMMARIZE_START_$PROJECT_NAME \
-				$SCRIPT_REPO/zip_file.sh \
+				$SCRIPT_REPO/gzip_file.sh \
 					$OTHER_FILES \
 					$DIR_TO_PARSE \
 					$PIGZ_MODULE
@@ -184,10 +184,11 @@
 	# FIND VCF FILES TO COMPRESS
 
 		echo
-		echo NOW LOOKING FOR VCF FILES TO COMPRESS
+		echo "echo NOW LOOKING FOR VCF FILES TO COMPRESS"
 		echo
 
-		find $DIR_TO_PARSE -type f \
+		find $DIR_TO_PARSE \
+			-type f \
 			-name "*.vcf" \
 		>| $DIR_TO_PARSE/vcf_to_compress"_"$TIME_STAMP".list"
 
@@ -198,7 +199,7 @@
 		COMPRESS_AND_INDEX_VCF ()
 			{
 				echo \
-				qsub $QUEUE_LIST \
+				qsub \
 					-S /bin/bash \
 					-cwd \
 					-V \
@@ -355,7 +356,7 @@
 	# Pass variable (vcf/txt/cram) file path to function and call $FILE within function
 
 	echo
-	echo NOW LOOKING FOR BAM FILES
+	echo "echo NOW LOOKING FOR BAM FILES"
 	echo
 
 		for FILE in $(find $DIR_TO_PARSE -type f -name "*.bam" | egrep -v 'HC.bam$|[[:space:]]')
@@ -412,12 +413,13 @@
 				-j y \
 				-o $DIR_TO_PARSE/LOGS/COMPRESSION/"DISK_SIZE_FINISH_"$PROJECT_NAME".log" \
 			-hold_jid GZIP_$PROJECT_NAME,COMPRESS_VCF_$PROJECT_NAME,$MD5_HOLD_LIST \
-			$SCRIPT_REPO/disk_space_summary_finish.sh \
+			$SCRIPT_REPO/finish_disk_size_summary.sh \
 				$DIR_TO_PARSE \
 				$TIME_STAMP \
 				$ROW_COUNT \
 				$WEBHOOK \
-				$EMAIL
+				$EMAIL \
+				$DATAMASH_EXE
 		}
 
 	SUMMARIZE_SIZES_FINISH
@@ -429,4 +431,4 @@
 			$EMAIL
 
 echo
-echo CIDR DATR ARCHIVING PIPELINE FOR $PROJECT_NAME HAS FINISHED SUBMITTING AT `date`
+echo "echo CIDR DATR ARCHIVING PIPELINE FOR $PROJECT_NAME HAS FINISHED SUBMITTING AT `date`"

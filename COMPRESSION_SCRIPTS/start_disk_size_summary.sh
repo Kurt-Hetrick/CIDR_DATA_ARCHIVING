@@ -24,8 +24,8 @@
 
 # INPUT VARIABLES
 
-	INPUT_DIRECTORY=$1 # path to directory that you want to check file sizes on.
-		INPUT_DIR_NAME=$(basename $INPUT_DIRECTORY)
+	DIR_TO_PARSE=$1 # path to directory that you want to check file sizes on.
+		PROJECT_NAME=$(basename $DIR_TO_PARSE)
 	ROW_COUNT=$2
 	TIME_STAMP=$3
 	DATAMASH_EXE=$4
@@ -34,58 +34,58 @@ START_BEGINNING_SUMMARY=`date '+%s'`
 
 # GRAB THE START TIME
 
-	printf "start;"\\t"`date`" | awk 'BEGIN {FS="\t"} {print $2}' \
-	>| $INPUT_DIRECTORY/$INPUT_DIR_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
+	printf "start;"\\t"`date`\n" \
+	>| $DIR_TO_PARSE/$PROJECT_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
 
 # PROJECT FOLDER SIZE BEFORE COMPRESSION
 
-	du -s $INPUT_DIRECTORY \
-		| awk '{print "before_compress_Gb;" "\t" $1/1024/1024}' \
-	>> $INPUT_DIRECTORY/$INPUT_DIR_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
+	du -s $DIR_TO_PARSE \
+		| awk -v CONVFMT='%.3f' '{print "before_compress_Gb;" "\t" $1/1024/1024}' \
+	>> $DIR_TO_PARSE/$PROJECT_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
 
 # CREATE A JSON FORMATTED STRING FOR THE TOP X NUMBER OF FILE EXTENSIONS BEFORE COMPRESSION
 # WILL BE PARSED OUT LATER FOR END OF RUN SUMMARY
 
-	find $INPUT_DIRECTORY -type f -exec du -a {} + \
+	find $DIR_TO_PARSE -type f -exec du -a {} + \
 		| awk 'BEGIN {FS="."} {print $1,$NF}' \
 		| sed -r 's/[[:space:]]+/\t/g' \
 		| sort -k 3,3 \
 		| $DATAMASH_EXE -g 3 sum 1 \
 		| sort -k 2,2nr \
-		| awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$1"\x22," , "\x22value\x22"":" , "\x22"($2/1024/1024) , "Gb" "\x22" "}"  }' \
+		| awk -v CONVFMT='%.3f' '{print "{" "\x22" "name" "\x22" ":" , "\x22"$1"\x22," , "\x22value\x22"":" , "\x22"($2/1024/1024) , "Gb" "\x22" "}"  }' \
 		| head -n $ROW_COUNT \
 		| $DATAMASH_EXE collapse 1 \
 		| awk 'BEGIN {FS=";"} {print "ext_b4_compress;" "\t" $1}' \
-	>> $INPUT_DIRECTORY/$INPUT_DIR_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
+	>> $DIR_TO_PARSE/$PROJECT_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
 
 # CREATE A JSON FORMATTED STRING FOR THE TOP X NUMBER OF FILE EXTENSIONS THAT HAVE ALREADY BEEN GZIPPED BEFORE THIS RUN.
 # WILL BE PARSED OUT LATER FOR END OF RUN SUMMMARY
 
-	find $INPUT_DIRECTORY -type f -name "*.gz" -exec du -a {} + \
+	find $DIR_TO_PARSE -type f -name "*.gz" -exec du -a {} + \
 		| awk 'BEGIN {FS="[./]";OFS="\t"} {print $1,$(NF-1)"."$NF}' \
 		| sed -r 's/[[:space:]]+/\t/g' \
 		| sort -k 2,2 \
-		| DATAMASH_EXE -g 2 sum 1 \
+		| $DATAMASH_EXE -g 2 sum 1 \
 		| sort -k 2,2nr \
-		| awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$1"\x22," , "\x22value\x22"":" , "\x22"($2/1024/1024) , "Gb" "\x22" "}"  }' \
+		| awk -v CONVFMT='%.3f' '{print "{" "\x22" "name" "\x22" ":" , "\x22"$1"\x22," , "\x22value\x22"":" , "\x22"($2/1024/1024) , "Gb" "\x22" "}"  }' \
 		| head -n $ROW_COUNT \
-		| DATAMASH_EXE collapse 1 \
+		| $DATAMASH_EXE collapse 1 \
 		| awk 'BEGIN {FS=";"} {print "ext_already_compressed;" "\t" $1}' \
-	>> $INPUT_DIRECTORY/$INPUT_DIR_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
+	>> $DIR_TO_PARSE/$PROJECT_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
 
 # CREATE A JSON FORMATTED STRING FOR THE TOP X NUMBER OF FILE EXTENSIONS THAT HAVE ALREADY BEEN GZIPPED BEFORE THIS RUN.
 # WILL BE PARSED OUT LATER FOR END OF RUN SUMMMARY
 
-	du -s $INPUT_DIRECTORY/*/ \
+	du -s $DIR_TO_PARSE/*/ \
 		| sort -k 1,1nr \
 		| awk 'BEGIN {FS="/"} {print $1,$(NF-1)}' \
-		|  awk '{print "{" "\x22" "name" "\x22" ":" , "\x22"$2"\x22," , "\x22value\x22"":" , "\x22"($1/1024/1024) , "Gb" "\x22" "}"  }' \
-		| head \
-		| DATAMASH_EXE collapse 1 \
-		| awk 'BEGIN {FS=";"} {print "subfolder_start;" $1}' \
-	>> $INPUT_DIRECTORY/$INPUT_DIR_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
+		| awk -v CONVFMT='%.3f' '{print "{" "\x22" "name" "\x22" ":" , "\x22"$2"\x22," , "\x22value\x22"":" , "\x22"($1/1024/1024) , "Gb" "\x22" "}"  }' \
+		| head -n  $ROW_COUNT \
+		| $DATAMASH_EXE collapse 1 \
+		| awk 'BEGIN {FS=";"} {print "subfolder_start;" "\t" $1}' \
+	>> $DIR_TO_PARSE/$PROJECT_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
 
 END_BEGINNING_SUMMARY=`date '+%s'`
 
-echo $INPUT_DIR_NAME,START_SUMMARY,$HOSTNAME,$START_BEGINNING_SUMMARY,$END_BEGINNING_SUMMARY \
+echo $PROJECT_NAME,START_SUMMARY,$HOSTNAME,$START_BEGINNING_SUMMARY,$END_BEGINNING_SUMMARY \
 >> $DIR_TO_PARSE/COMPRESSOR.WALL.CLOCK.TIMES.csv
