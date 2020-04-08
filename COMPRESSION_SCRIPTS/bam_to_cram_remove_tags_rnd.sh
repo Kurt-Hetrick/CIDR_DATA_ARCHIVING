@@ -35,8 +35,8 @@
 	DIR_TO_PARSE=$2
 	REF_GENOME=$3
 	COUNTER=$4
-	GATK_DIR=$5
-	JAVA_1_7=$6
+	GATK_4_DIR=$5
+	JAVA_1_8=$6
 	SAMTOOLS_EXEC=$7
 
 # BQSR path and files seem to very slightly... Also some files have been ran mutliple times.
@@ -56,18 +56,19 @@ START_CRAM=`date '+%s'`
 
 	BIN_QUALITY_SCORES_REMOVE_TAGS_AND_CRAM ()
 		{
-			$JAVA_1_7/java -jar $GATK_DIR/GenomeAnalysisTK.jar \
-				-T PrintReads \
-				-R $REF_GENOME \
-				-I $IN_BAM \
-				-BQSR $BQSR_FILE \
-				-dt NONE \
-				-SQQ 10 \
-				-SQQ 20 \
-				-SQQ 30 \
-				-EOQ \
-				-nct 6 \
-			-o $DIR_TO_PARSE/TEMP/$SM_TAG"_"$COUNTER"_binned.bam"
+			$JAVA_1_8/java -jar \
+				$GATK_4_DIR/gatk-package-4.0.11.0-local.jar \
+				ApplyBQSR \
+				--add-output-sam-program-record \
+				--use-original-qualities \
+				--emit-original-quals \
+				--reference $REF_GENOME \
+				--input $IN_BAM \
+				--bqsr-recal-file $BQSR_FILE \
+				--static-quantized-quals 10 \
+				--static-quantized-quals 20 \
+				--static-quantized-quals 30 \
+			--output $DIR_TO_PARSE/TEMP/$SM_TAG"_"$COUNTER"_binned.bam"
 
 				# check the exit signal at this point.
 

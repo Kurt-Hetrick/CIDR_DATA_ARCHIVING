@@ -79,6 +79,8 @@
 	PICARD_DIR=/mnt/linuxtools/PICARD/picard-tools-1.141
 	DATAMASH_EXE=/mnt/linuxtools/DATAMASH/datamash-1.0.6/datamash
 	PIGZ_MODULE=pigz/2.3.4
+	JAVA_1_8=/mnt/linuxtools/JAVA/jdk1.8.0_73/bin
+	GATK_4_DIR=/mnt/linuxtools/GATK/gatk-4.0.11.0
 
 #######################################################################
 ##### SUMMARIZE FILE AND FOLDER SIZES BEFORE THIS COMPRESSION RUN #####
@@ -244,9 +246,10 @@
 						$DIR_TO_PARSE \
 						$REF_GENOME \
 						$COUNTER \
-						$GATK_DIR \
-						$JAVA_1_7 \
+						$GATK_4_DIR \
+						$JAVA_1_8 \
 						$SAMTOOLS_EXEC
+
 			}
 
 	# Uses samtools-1.4 (or higher) to convert bam to cram and index and remove excess tags
