@@ -272,7 +272,8 @@
 						$FILE \
 						$DIR_TO_PARSE \
 						$REF_GENOME \
-						$SAMTOOLS_EXEC
+						$SAMTOOLS_EXEC \
+						$COUNTER
 			}
 
 	# Uses ValidateSam to report any errors found within the original BAM file
@@ -374,7 +375,7 @@
 					# case $FILE in *02_CIDR_RND*)
 					case $FILE in *[Rr][Nn][Dd]*)
 
-						CRAM_DIR=$(echo $FILE | sed -r 's/BAM.*/CRAM/g')
+						CRAM_DIR=$(dirname $FILE | awk '{print $0 "/CRAM"}')
 							mkdir -p $CRAM_DIR
 
 						BAM_TO_CRAM_CONVERSION_RND
@@ -386,7 +387,7 @@
 					;;
 						*)
 
-						CRAM_DIR=$(echo $FILE | sed -r 's/BAM.*/CRAM/g')
+						CRAM_DIR=$(dirname $FILE | awk '{print $0 "/CRAM"}')
 							mkdir -p $CRAM_DIR
 
 						BAM_TO_CRAM_CONVERSION_PRODUCTION

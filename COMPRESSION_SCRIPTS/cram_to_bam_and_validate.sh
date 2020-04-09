@@ -26,7 +26,7 @@
 
 	IN_BAM=$1
 		BAM_DIR=$(dirname $IN_BAM)
-			CRAM_DIR=$(echo $BAM_DIR | sed -r 's/BAM.*//g')/CRAM
+			CRAM_DIR=$(dirname $IN_BAM | awk '{print $0 "/CRAM"}')
 			TEMP_DIR=$(echo $BAM_DIR | sed -r 's/BAM.*//g')/TEMP
 	REF_GENOME=/isilon/sequencing/GATK_resource_bundle/bwa_mem_0.7.5a_ref/human_g1k_v37_decoy.fasta # Reference genome used for creating BAM file. Needs to be indexed with samtools faidx (would have ref.fasta.fai companion file)
 	PICARD_DIR="/isilon/sequencing/VITO/Programs/picard/picard-tools-1.141/"

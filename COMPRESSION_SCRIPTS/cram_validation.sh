@@ -26,7 +26,7 @@
 
 	IN_BAM=$1
 		SM_TAG=$(basename $IN_BAM .bam)
-		CRAM_DIR=$(echo $IN_BAM | sed -r 's/BAM.*/CRAM/g')
+		CRAM_DIR=$(dirname $IN_BAM | awk '{print $0 "/CRAM"}')
 	DIR_TO_PARSE=$2
 	REF_GENOME=$3
 	COUNTER=$4

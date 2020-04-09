@@ -29,7 +29,7 @@
 	IN_BAM=$1
 		BAM_FILE_SIZE=$(du -ab $IN_BAM | awk '{print ($1/1024/1024/1024)}')
 		SM_TAG=$(basename $IN_BAM .bam)
-		CRAM_DIR=$(echo $IN_BAM | sed -r 's/BAM.*/CRAM/g')
+		CRAM_DIR=$(dirname $IN_BAM | awk '{print $0 "/CRAM"}')
 		BAM_DIR=$(dirname $IN_BAM)
 			BAM_MAIN_DIR=$(echo $BAM_DIR | sed -r 's/BAM.*//g')
 	DIR_TO_PARSE=$2
