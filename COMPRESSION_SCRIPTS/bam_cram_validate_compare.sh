@@ -94,6 +94,10 @@ START_FLAGSTAT=`date '+%s'`
 				| awk 'BEGIN {print "BAM ##### CRAM ##### METRIC"} {print $0}' \
 			>| $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
 
+			rm -vf $CRAM_DIR/$SM_TAG".cram"
+			rm -vf $CRAM_DIR/$SM_TAG".cram.crai"
+			rm -vf $CRAM_DIR/$SM_TAG".crai"
+
 			echo -e $IN_BAM\\tFAIL\\t$CRAM_ONLY_ERRORS | sed -r 's/[[:space:]]+/\t/g' >> $DIR_TO_PARSE/cram_conversion_validation.list
 			mail -s "$IN_BAM Failed Cram conversion-Cram Flagstat Output" $EMAIL < $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
 	fi
