@@ -34,6 +34,7 @@
 	DATAMASH_EXE=$4
 	SAMTOOLS_EXE=$5
 	EMAIL=$6
+	TIME_STAMP=$7
 
 # Made this explicit if the validation output files are not found it will fail
 # this does not account for if the file is empty.
@@ -64,10 +65,10 @@ START_FLAGSTAT=`date '+%s'`
 
 ## If the two files are the same AND the CRAM_ONLY_ERRORS variable is null will the output verify the conversion was sucessful.
 
-	if [[ ! -e $DIR_TO_PARSE/cram_conversion_validation.list ]]
+	if [[ ! -e $DIR_TO_PARSE/"cram_conversion_validation_"$TIME_STAMP".list" ]]
 		then
 		echo -e SAMPLE\\tCRAM_CONVERSION_SUCCESS\\tCRAM_ONLY_ERRORS\\tNUMBER_OF_CRAM_ONLY_ERRORS \
-			>| $DIR_TO_PARSE/cram_conversion_validation.list
+			>| $DIR_TO_PARSE/"cram_conversion_validation_"$TIME_STAMP".list"
 	fi
 
 ## If either of these fail, the error file will show this.
@@ -76,7 +77,7 @@ START_FLAGSTAT=`date '+%s'`
 		then
 			echo $SM_TAG CRAM COMPRESSION WAS COMPLETED SUCCESSFULLY
 			echo -e $IN_BAM\\tPASS\\t$CRAM_ONLY_ERRORS | sed -r 's/[[:space:]]+/\t/g' \
-				>> $DIR_TO_PARSE/cram_conversion_validation.list
+				>> $DIR_TO_PARSE/"cram_conversion_validation_"$TIME_STAMP".list"
 			# Put this back in after debugging.
 			rm -vf $BAM_DIR/$SM_TAG.bam
 			rm -vf $BAM_DIR/$SM_TAG.bai
@@ -98,7 +99,7 @@ START_FLAGSTAT=`date '+%s'`
 			rm -vf $CRAM_DIR/$SM_TAG".cram.crai"
 			rm -vf $CRAM_DIR/$SM_TAG".crai"
 
-			echo -e $IN_BAM\\tFAIL\\t$CRAM_ONLY_ERRORS | sed -r 's/[[:space:]]+/\t/g' >> $DIR_TO_PARSE/cram_conversion_validation.list
+			echo -e $IN_BAM\\tFAIL\\t$CRAM_ONLY_ERRORS | sed -r 's/[[:space:]]+/\t/g' >> $DIR_TO_PARSE/"cram_conversion_validation_"$TIME_STAMP".list"
 			mail -s "$IN_BAM Failed Cram conversion-Cram Flagstat Output" $EMAIL < $DIR_TO_PARSE/TEMP/$SM_TAG".combined."$COUNTER".flagstat.out"
 	fi
 
