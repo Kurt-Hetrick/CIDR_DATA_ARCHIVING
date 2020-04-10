@@ -364,7 +364,9 @@
 	echo "echo NOW LOOKING FOR BAM FILES"
 	echo
 
-		for FILE in $(find $DIR_TO_PARSE -type f -name "*.bam" | egrep -v 'HC.bam$|[[:space:]]')
+		# for FILE in $(find $DIR_TO_PARSE -type f -name "*.bam" | egrep -v 'HC.bam$|[[:space:]]')
+
+		for FILE in $(find $DIR_TO_PARSE -type f -name "*.bam")
 			do
 				BASENAME=$(basename $FILE)
 				UNIQUE_ID=$(echo $BASENAME | sed 's/@/_/g') # If there is an @ in the qsub or holdId name it breaks
