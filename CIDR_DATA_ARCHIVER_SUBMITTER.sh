@@ -148,6 +148,7 @@
 			-o -name \*.sas7bdat \
 			-o -name \*.locs \
 			-o -name \*.gdepth \
+			-o -name \*.psl \
 			-o -name \*.lgenf \
 			-o -name \*.mpileup \
 			-o -name \*.backup \) \
