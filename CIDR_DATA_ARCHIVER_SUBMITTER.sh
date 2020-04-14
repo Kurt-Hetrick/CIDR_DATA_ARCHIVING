@@ -122,7 +122,7 @@
 	echo
 	echo "echo LOOKING FOR THE FOLLOWING FILES TO COMPRESS:"
 	echo "echo txt,csv,intervals,fasta,idat,ped,fastq,bed,lgen,sam,xml,log,sample_interval_summary,genome,tped"
-	echo "echo jpg,kin0,analysis,gtc,sas7bdata,locs,gdepth,lgenf,mpileup,backup"
+	echo "echo jpg,kin0,analysis,gtc,sas7bdata,locs,gdepth,lgenf,mpileup,backup,psl,daf"
 	echo
 
 		find $DIR_TO_PARSE -type f \
@@ -150,6 +150,7 @@
 			-o -name \*.gdepth \
 			-o -name \*.psl \
 			-o -name \*.lgenf \
+			-o -name \*.daf \
 			-o -name \*.mpileup \
 			-o -name \*.backup \) \
 		>| $DIR_TO_PARSE/other_files_to_compress"_"$TIME_STAMP".list"
