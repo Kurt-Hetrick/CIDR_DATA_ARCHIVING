@@ -121,7 +121,7 @@
 
 	echo
 	echo "echo LOOKING FOR THE FOLLOWING FILES TO COMPRESS:"
-	echo "echo txt,csv,intervals,fasta,idat,ped,fastq,bed,lgen,sam,xml,log,sample_interval_summary,genome,tped,tif,bak,ibs0"
+	echo "echo txt,csv,intervals,fasta,idat,ped,fastq,bed,lgen,sam,xml,log,sample_interval_summary,genome,tped,tif,bak,ibs0,bim"
 	echo "echo jpg,kin0,analysis,gtc,sas7bdata,locs,gdepth,lgenf,mpileup,backup,psl,daf,fq,out,CEL,frq,map,variant_function"
 	echo
 
@@ -161,6 +161,7 @@
 			-o -name \*.ibs0 \
 			-o -name \*.variant_function \
 			-o -name \*.bak \
+			-o -name \*.bim \
 			-o -name \*.backup \) \
 		| grep -v " " \
 		>| $DIR_TO_PARSE/other_files_to_compress"_"$TIME_STAMP".list"
