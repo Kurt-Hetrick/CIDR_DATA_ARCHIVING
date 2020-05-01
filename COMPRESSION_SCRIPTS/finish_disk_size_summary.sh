@@ -194,8 +194,7 @@ START_FINISHING_SUMMARY=`date '+%s'`
 	>> $DIR_TO_PARSE/$PROJECT_NAME"_"$TIME_STAMP"_DATA_ARCHIVING_SUMMARY.json"
 
 	find $DIR_TO_PARSE -type f -exec du -a {} + \
-		| awk 'BEGIN {FS="."} {print $1,$NF}' \
-		| sed -r 's/[[:space:]]+/\t/g' \
+		| awk 'BEGIN {FS="."} {print $1 "\t" $NF}' \
 		| sort -k 3,3 \
 		| $DATAMASH_EXE -g 3 sum 1 \
 		| sort -k 2,2nr \
@@ -245,7 +244,7 @@ START_FINISHING_SUMMARY=`date '+%s'`
 
 	du -s $DIR_TO_PARSE/*/ \
 		| sort -k 1,1nr \
-		| awk 'BEGIN {FS="/"} {print $1,$(NF-1)}' \
+		| awk 'BEGIN {FS="/"} {print $1 "\t" $(NF-1)}' \
 		| awk -v CONVFMT='%.3f' '{print "{" "\x22" "name" "\x22" ":" , "\x22"$2"\x22," , "\x22value\x22"":" , "\x22"($1/1024/1024) , "Gb" "\x22" "}"  }' \
 		| head -n $ROW_COUNT \
 		| $DATAMASH_EXE collapse 1 \

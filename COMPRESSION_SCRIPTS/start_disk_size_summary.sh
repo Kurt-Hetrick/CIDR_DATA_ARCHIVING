@@ -47,8 +47,7 @@ START_BEGINNING_SUMMARY=`date '+%s'`
 # WILL BE PARSED OUT LATER FOR END OF RUN SUMMARY
 
 	find $DIR_TO_PARSE -type f -exec du -a {} + \
-		| awk 'BEGIN {FS="."} {print $1,$NF}' \
-		| sed -r 's/[[:space:]]+/\t/g' \
+		| awk 'BEGIN {FS="."} {print $1 "\t" $NF}' \
 		| sort -k 3,3 \
 		| $DATAMASH_EXE -g 3 sum 1 \
 		| sort -k 2,2nr \
@@ -73,12 +72,12 @@ START_BEGINNING_SUMMARY=`date '+%s'`
 		| awk 'BEGIN {FS=";"} {print "ext_already_compressed;" "\t" $1}' \
 	>> $DIR_TO_PARSE/$PROJECT_NAME"_DATA_SIZE_SUMMARY_START_"$TIME_STAMP".summary"
 
-# CREATE A JSON FORMATTED STRING FOR THE TOP X NUMBER OF FILE EXTENSIONS THAT HAVE ALREADY BEEN GZIPPED BEFORE THIS RUN.
+# CREATE A JSON FORMATTED STRING FOR THE TOP X NUMBER OF SUBFOLDERS BEFORE THIS RUN.
 # WILL BE PARSED OUT LATER FOR END OF RUN SUMMMARY
 
 	du -s $DIR_TO_PARSE/*/ \
 		| sort -k 1,1nr \
-		| awk 'BEGIN {FS="/"} {print $1,$(NF-1)}' \
+		| awk 'BEGIN {FS="/"} {print $1 "\t" $(NF-1)}' \
 		| awk -v CONVFMT='%.3f' '{print "{" "\x22" "name" "\x22" ":" , "\x22"$2"\x22," , "\x22value\x22"":" , "\x22"($1/1024/1024) , "Gb" "\x22" "}"  }' \
 		| head -n  $ROW_COUNT \
 		| $DATAMASH_EXE collapse 1 \

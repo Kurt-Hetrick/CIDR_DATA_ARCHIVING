@@ -36,46 +36,63 @@ START_GZIP=`date '+%s'`
 
 	COMPRESS_AND_VALIDATE ()
 		{
+
+
+			# quote variable for safety when dealing with whitespaces
+
+				FILE2="$FILE"
+
 			# GET THE MD5 BEFORE COMPRESSION
 
-				ORIGINAL_MD5=$(md5sum $FILE | awk '{print $1}')
+				ORIGINAL_MD5=$(md5sum "$FILE2" | awk '{print $1}')
 
 			# BGZIP THE FILE AND INDEX IT
 
 				# if any part of pipe fails set exit to non-zero
 
-					pigz -c -p 4 $FILE >| $FILE.gz
+					pigz -c -p 4 "$FILE2" >| "$FILE2".gz
 
 			# GET THE MD5 AFTER COMPRESSION
 
-				COMPRESSED_MD5=$(md5sum $FILE.gz)
+				COMPRESSED_MD5=$(md5sum "$FILE2".gz)
 
 			# check md5sum of zipped file using zcat
 
-				ZIPPED_MD5=$(zcat $FILE.gz | md5sum | awk '{print $1}')
+				ZIPPED_MD5=$(zcat "$FILE2".gz | md5sum | awk '{print $1}')
 
 			# write both md5 to files
 
 				echo $COMPRESSED_MD5 >> $DIR_TO_PARSE/MD5_REPORTS/compressed_md5_other_files.list
-				echo $ORIGINAL_MD5 $FILE >> $DIR_TO_PARSE/MD5_REPORTS/original_md5_other_files.list
+				echo $ORIGINAL_MD5 "$FILE2" >> $DIR_TO_PARSE/MD5_REPORTS/original_md5_other_files.list
 
 			# if md5 matches delete the uncompressed file
 
 				if [[ $ORIGINAL_MD5 = $ZIPPED_MD5 ]]
 					then
-						echo "$FILE" compressed successfully >> $DIR_TO_PARSE/successful_compression_jobs_other_files.list
-						rm -rvf "$FILE"
+						echo "$FILE2" compressed successfully >> $DIR_TO_PARSE/successful_compression_jobs_other_files.list
+						rm -rvf "$FILE2"
 					else
-						echo "$FILE" did not compress successfully >> $DIR_TO_PARSE/failed_compression_jobs_other_files.list
+						echo "$FILE2" did not compress successfully >> $DIR_TO_PARSE/failed_compression_jobs_other_files.list
 				fi
 		}
 
-	export -f COMPRESS_AND_VALIDATE
+	# set original IFS to variable.
 
-	for FILE in $(cat $IN_FILES);
-		do COMPRESS_AND_VALIDATE
-	done
+		saveIFS="$IFS"
 
+	# set IFS to comma and newline to handle files with whitespace in name
+
+		IFS=$',\n'
+
+	# loop through all the files
+
+		for FILE in $(cat $IN_FILES);
+			do COMPRESS_AND_VALIDATE
+		done
+
+	# set IFS back to original IFS
+
+		IFS="$saveIFS"
 
 END_GZIP=`date '+%s'`
 

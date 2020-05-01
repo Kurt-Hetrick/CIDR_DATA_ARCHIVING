@@ -164,7 +164,6 @@
 			-o -name \*.bim \
 			-o -name \*.lmiss \
 			-o -name \*.backup \) \
-		| grep -v " " \
 		>| $DIR_TO_PARSE/other_files_to_compress"_"$TIME_STAMP".list"
 
 	OTHER_FILES="$DIR_TO_PARSE/other_files_to_compress"_"$TIME_STAMP".list""
