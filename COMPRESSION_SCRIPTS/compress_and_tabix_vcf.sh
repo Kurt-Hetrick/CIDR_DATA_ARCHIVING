@@ -29,6 +29,7 @@
 		PROJECT_NAME=$(basename $DIR_TO_PARSE)
 	TABIX_EXEC=$3
 	BGZIP_EXEC=$4
+	TIME_STAMP=$5
 
 START_COMPRESS_VCF=`date '+%s'`
 
@@ -76,7 +77,7 @@ START_COMPRESS_VCF=`date '+%s'`
 							echo "$IN_VCF" compressed successfully >> $DIR_TO_PARSE/successful_compression_jobs_vcf.list
 							rm -rvf "$IN_VCF"
 						else
-							echo "$IN_VCF" did not compress successfully >> $DIR_TO_PARSE/failed_compression_jobs_vcf.list
+							echo "$IN_VCF" did not compress successfully >> $DIR_TO_PARSE/"failed_compression_jobs_vcf."$TIME_STAMP".list"
 					fi
 
 				# delete the tribble index for the uncompressed file
@@ -93,4 +94,4 @@ START_COMPRESS_VCF=`date '+%s'`
 END_COMPRESS_VCF=`date '+%s'`
 
 echo $PROJECT_NAME,COMPRESS_AND_INDEX_VCF,$HOSTNAME,$START_COMPRESS_VCF,$END_COMPRESS_VCF \
->> $DIR_TO_PARSE/COMPRESSOR.WALL.CLOCK.TIMES.csv
+>> $DIR_TO_PARSE/"COMPRESSOR_WALL_CLOCK_TIMES_"$TIME_STAMP".csv"

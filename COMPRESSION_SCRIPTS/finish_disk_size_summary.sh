@@ -271,12 +271,12 @@ START_FINISHING_SUMMARY=`date '+%s'`
 ##### Send out notification if files failed to compress #####
 #############################################################
 
-	if [[ -f $DIR_TO_PARSE/failed_compression_jobs_other_files.list ]]
+	if [[ -f $DIR_TO_PARSE/"failed_compression_jobs_other_files_"$TIME_STAMP".list" ]]
 		then
 			mail -s "FILES FAILED TO COMPRESS IN $PROJECT_NAME!" \
 			$EMAIL \
-			< $DIR_TO_PARSE/failed_compression_jobs_other_files.list
-				sleep 2s
+			< $DIR_TO_PARSE/"failed_compression_jobs_other_files_"$TIME_STAMP".list"
+				sleep 2
 	fi
 
 #################################################################
@@ -287,11 +287,11 @@ START_FINISHING_SUMMARY=`date '+%s'`
 		then
 			mail -s "VCF FILES FAILED TO COMPRESS IN $PROJECT_NAME!" \
 			$EMAIL \
-			< $DIR_TO_PARSE/failed_compression_jobs_vcf.list
+			< $DIR_TO_PARSE/"failed_compression_jobs_other_files_"$TIME_STAMP".list"
 				sleep 2s
 	fi
 
 END_FINISHING_SUMMARY=`date '+%s'`
 
 echo $PROJECT_NAME,FINISH_SUMMARY,$HOSTNAME,$START_FINISHING_SUMMARY,$END_FINISHING_SUMMARY \
->> $DIR_TO_PARSE/COMPRESSOR.WALL.CLOCK.TIMES.csv
+>> $DIR_TO_PARSE/"COMPRESSOR_WALL_CLOCK_TIMES_"$TIME_STAMP".csv"

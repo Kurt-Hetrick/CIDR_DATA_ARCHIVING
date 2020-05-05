@@ -187,7 +187,8 @@
 				$SCRIPT_REPO/gzip_file.sh \
 					$OTHER_FILES \
 					$DIR_TO_PARSE \
-					$PIGZ_MODULE
+					$PIGZ_MODULE \
+					$TIME_STAMP
 			}
 
 		ZIP_TEXT_AND_CSV_FILE
@@ -262,7 +263,8 @@
 						$COUNTER \
 						$GATK_4_DIR \
 						$JAVA_1_8 \
-						$SAMTOOLS_EXEC
+						$SAMTOOLS_EXEC \
+						$TIME_STAMP
 
 			}
 
@@ -287,7 +289,8 @@
 						$DIR_TO_PARSE \
 						$REF_GENOME \
 						$SAMTOOLS_EXEC \
-						$COUNTER
+						$COUNTER \
+						$TIME_STAMP
 			}
 
 	# Uses ValidateSam to report any errors found within the original BAM file
@@ -310,7 +313,8 @@
 					$DIR_TO_PARSE \
 					$COUNTER \
 					$JAVA_1_7 \
-					$PICARD_DIR
+					$PICARD_DIR \
+					$TIME_STAMP
 			}
 
 	# Uses ValidateSam to report any errors found within the cram files
@@ -334,7 +338,8 @@
 					$REF_GENOME \
 					$COUNTER \
 					$JAVA_1_7 \
-					$PICARD_DIR
+					$PICARD_DIR \
+					$TIME_STAMP
 			}
 
 	# Parses through all CRAM_VALIDATOR files to determine if any errors/potentially corrupted cram files were created and creates a list in the top directory

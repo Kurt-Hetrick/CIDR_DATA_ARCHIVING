@@ -29,6 +29,7 @@
 		PROJECT_NAME=$(basename $DIR_TO_PARSE)
 	PIGZ_MODULE=$3
 		module load $PIGZ_MODULE
+	TIME_STAMP=$4
 
 START_GZIP=`date '+%s'`
 
@@ -72,7 +73,7 @@ START_GZIP=`date '+%s'`
 						echo "$FILE2" compressed successfully >> $DIR_TO_PARSE/successful_compression_jobs_other_files.list
 						rm -rvf "$FILE2"
 					else
-						echo "$FILE2" did not compress successfully >> $DIR_TO_PARSE/failed_compression_jobs_other_files.list
+						echo "$FILE2" did not compress successfully >> $DIR_TO_PARSE/"failed_compression_jobs_other_files_"$TIME_STAMP".list"
 				fi
 		}
 
@@ -97,4 +98,4 @@ START_GZIP=`date '+%s'`
 END_GZIP=`date '+%s'`
 
  echo $PROJECT_NAME,PIGZ,$HOSTNAME,$START_GZIP,$END_GZIP \
- >> $DIR_TO_PARSE/COMPRESSOR.WALL.CLOCK.TIMES.csv
+ >> $DIR_TO_PARSE/"COMPRESSOR_WALL_CLOCK_TIMES_"$TIME_STAMP".csv"

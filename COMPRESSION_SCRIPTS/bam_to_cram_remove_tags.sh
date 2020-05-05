@@ -34,13 +34,14 @@
 	REF_GENOME=$3
 	SAMTOOLS_EXEC=$4
 	COUNTER=$5
+	TIME_STAMP=$6
 
 START_CRAM=`date '+%s'`
 
-	if [[ ! -e $DIR_TO_PARSE/cram_compression_times.csv ]]
+	if [[ ! -e $DIR_TO_PARSE/"cram_compression_times."$TIME_STAMP".csv" ]]
 		then
 			echo -e SAMPLE,PROCESS,ORIGINAL_BAM_SIZE,CRAM_SIZE,HOSTNAME,START_TIME,END_TIME \
-				>| $DIR_TO_PARSE/cram_compression_times.csv
+				>| $DIR_TO_PARSE/"cram_compression_times."$TIME_STAMP".csv"
 	fi
 
 
@@ -76,7 +77,7 @@ START_CRAM=`date '+%s'`
 END_CRAM=`date '+%s'`
 
 echo $IN_BAM,CRAM,$BAM_FILE_SIZE,$CRAM_FILE_SIZE,$HOSTNAME,$START_CRAM,$END_CRAM \
->> $DIR_TO_PARSE/cram_compression_times.csv
+>> $DIR_TO_PARSE/"cram_compression_times."$TIME_STAMP".csv"
 
 # exit with the signal from the program
 

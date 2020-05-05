@@ -38,6 +38,7 @@
 	GATK_4_DIR=$5
 	JAVA_1_8=$6
 	SAMTOOLS_EXEC=$7
+	TIME_STAMP=$8
 
 # BQSR path and files seem to very slightly... Also some files have been ran mutliple times.
 # This pulls the directory above the BAM folder to search from and sort the output in directory structure to take the top one
@@ -48,10 +49,10 @@ START_CRAM=`date '+%s'`
 
 	# create header for wall clocck bench marks
 
-		if [[ ! -e $DIR_TO_PARSE/cram_compression_times.csv ]]
+		if [[ ! -e $DIR_TO_PARSE/"cram_compression_times."$TIME_STAMP".csv" ]]
 			then
 				echo -e SAMPLE,PROCESS,ORIGINAL_BAM_SIZE,CRAM_SIZE,HOSTNAME,START_TIME,END_TIME \
-					>| $DIR_TO_PARSE/cram_compression_times.csv
+					>| $DIR_TO_PARSE/"cram_compression_times."$TIME_STAMP".csv"
 		fi
 
 	BIN_QUALITY_SCORES_REMOVE_TAGS_AND_CRAM ()
@@ -150,7 +151,7 @@ START_CRAM=`date '+%s'`
 END_CRAM=`date '+%s'`
 
 echo $IN_BAM,CRAM,$BAM_FILE_SIZE,$CRAM_FILE_SIZE,$HOSTNAME,$START_CRAM,$END_CRAM \
->> $DIR_TO_PARSE/cram_compression_times.csv
+>> $DIR_TO_PARSE/"cram_compression_times."$TIME_STAMP".csv"
 
 # exit with the signal from the program
 
