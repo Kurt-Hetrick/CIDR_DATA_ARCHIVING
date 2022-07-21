@@ -78,7 +78,7 @@ START_GZIP=$(date '+%s')
 			-o -name \*.lmiss \
 			-o -name \*.snp \
 			-o -name \*.backup \) \
-		| egrep -v "COMPRESSOR_WALL_CLOCK_TIMES_${TIME_STAMP}.csv|/LOGS/COMPRESSION/" \
+		| egrep -v "COMPRESSOR_WALL_CLOCK_TIMES_${TIME_STAMP}.csv|/LOGS/COMPRESSION/|CONVERSION_VALIDATION/" \
 		>| ${DIR_TO_PARSE}/other_files_to_compress_${TIME_STAMP}.list
 
 	# compare md5sum before and after compression. if the same, then delete the uncompressed file.
