@@ -67,6 +67,7 @@ START_GZIP=$(date '+%s')
 			-o -name \*.mpileup \
 			-o -name \*.tif \
 			-o -name \*.fq \
+			-o -name \*.h5 \
 			-o -name \*.out \
 			-o -name \*.CEL \
 			-o -name \*.frq \
